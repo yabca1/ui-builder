@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { clsx } from "clsx";
 import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { BuilderCanvas } from "@/features/builder/components/BuilderCanvas";
 import { BuilderToolbar } from "@/features/builder/components/BuilderToolbar";
@@ -9,6 +10,8 @@ import { PropertyInspector } from "@/features/builder/components/PropertyInspect
 import { ResizableScreenFrame } from "@/features/builder/components/ResizableScreenFrame";
 import { ScreenManager } from "@/features/builder/components/ScreenManager";
 import { ThemeManager } from "@/features/builder/components/ThemeManager";
+import { ProjectManager } from "@/features/builder/components/ProjectManager";
+import { AutosaveManager } from "@/features/builder/components/AutosaveManager";
 import { useActiveScreen, useBuilderStore } from "@/features/builder/store/builder.store";
 import { findNode, findParentAndIndex, canInsertNode } from "@/features/builder/utils/node-tree";
 import { componentRegistry } from "@/mini-app/registry/component-registry";
@@ -73,18 +76,18 @@ function PreviewPanel() {
   const themeMode = useBuilderStore((state) => state.themeMode);
 
   return (
-    <main className="builder-grid flex min-w-0 flex-1 flex-col items-center overflow-auto p-3 sm:p-4 xl:p-6">
-      <div className="mb-4 rounded-full border border-teal-100 bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 shadow-sm">
+    <main className="builder-grid dark:bg-slate-950 flex min-w-0 flex-1 flex-col items-center overflow-auto p-3 sm:p-4 xl:p-6 transition-colors duration-200">
+      <div className="mb-4 rounded-full border border-teal-100 dark:border-teal-900/30 bg-white/90 dark:bg-slate-900/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 shadow-sm">
         Preview
       </div>
-      <ResizableScreenFrame className="bg-white" contentClassName="overflow-hidden">
+      <ResizableScreenFrame className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800" contentClassName="overflow-hidden">
         <MiniAppRenderer miniApp={miniApp} themeMode={themeMode} />
       </ResizableScreenFrame>
     </main>
   );
 }
 
-type TabType = "components" | "screens" | "theme" | "settings" | "help";
+type TabType = "projects" | "components" | "screens" | "theme" | "settings" | "help";
 
 type ToolRailProps = {
   activeTab: TabType;
@@ -92,7 +95,17 @@ type ToolRailProps = {
 };
 
 function ToolRail({ activeTab, setActiveTab }: ToolRailProps) {
+  const themeMode = useBuilderStore((state) => state.themeMode);
   const tabs = [
+    {
+      id: "projects" as TabType,
+      label: "Projects",
+      icon: (
+        <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+        </svg>
+      ),
+    },
     {
       id: "components" as TabType,
       label: "Components",
@@ -150,7 +163,7 @@ function ToolRail({ activeTab, setActiveTab }: ToolRailProps) {
   ];
 
   return (
-    <nav className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-slate-200 bg-slate-50/80 px-2 py-2 xl:w-16 xl:flex-col xl:border-r xl:border-b-0 xl:px-0 xl:py-4 select-none">
+    <nav className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 px-2 py-2 xl:w-16 xl:flex-col xl:border-r xl:border-b-0 xl:px-0 xl:py-4 select-none transition-colors duration-200">
       <div className="mb-0 grid size-10 shrink-0 place-items-center rounded-xl bg-teal-600 text-base font-black text-white shadow-sm xl:mb-6">
         RN
       </div>
@@ -164,7 +177,7 @@ function ToolRail({ activeTab, setActiveTab }: ToolRailProps) {
             className={`flex flex-col items-center justify-center size-12 shrink-0 rounded-xl transition gap-1 ${
               isActive
                 ? "bg-teal-600 text-white shadow-md shadow-teal-900/10"
-                : "text-slate-500 hover:bg-white hover:text-teal-700"
+                : "text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-teal-700 dark:hover:text-teal-400"
             }`}
             aria-label={tab.label}
             title={tab.label}
@@ -191,47 +204,47 @@ function AppSettingsPanel() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">Project Settings</h2>
+    <div className="flex flex-col gap-4 p-4 text-slate-700 dark:text-slate-300">
+      <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Project Settings</h2>
       
-      <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-500">
+      <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
         App Name
         <input
           value={miniApp.name}
           onChange={(e) => setProjectName(e.target.value)}
-          className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+          className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20"
         />
       </label>
 
-      <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-500">
+      <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
         App Version
         <input
           value={miniApp.version || "1.0.0"}
           onChange={(e) => updateAppVersion(e.target.value)}
-          className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+          className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20"
         />
       </label>
 
-      <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-500">
+      <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
         Entry Screen
         <select
           value={miniApp.entryScreenId}
           onChange={(e) => setEntryScreen(e.target.value)}
-          className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+          className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20"
         >
           {miniApp.screens.map((screen) => (
-            <option key={screen.id} value={screen.id}>
+            <option key={screen.id} value={screen.id} className="dark:bg-slate-900 dark:text-slate-100">
               {screen.name}
             </option>
           ))}
         </select>
       </label>
 
-      <div className="border-t border-slate-200 pt-4 mt-2">
+      <div className="border-t border-slate-200 dark:border-slate-850 pt-4 mt-2">
         <button
           type="button"
           onClick={resetProject}
-          className="w-full rounded-lg border border-rose-200 bg-white py-2 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50"
+          className="w-full rounded-lg border border-rose-200 dark:border-rose-900/40 bg-white dark:bg-slate-900 py-2 text-sm font-semibold text-rose-600 dark:text-rose-400 shadow-sm transition hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer"
         >
           Reset Entire Workspace
         </button>
@@ -242,28 +255,28 @@ function AppSettingsPanel() {
 
 function HelpGuidePanel() {
   return (
-    <div className="flex flex-col gap-4 p-4 text-slate-700">
-      <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">Cheatsheet Guide</h2>
+    <div className="flex flex-col gap-4 p-4 text-slate-700 dark:text-slate-300">
+      <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Cheatsheet Guide</h2>
       <div className="flex flex-col gap-3 text-xs leading-relaxed">
-        <div className="p-3 bg-teal-50 rounded-lg border border-teal-100/60">
-          <p className="font-bold text-teal-800 mb-1">🧩 Drop Components</p>
-          <p className="text-teal-900/80">Drag components from the Palette and drop them onto the center Phone Canvas.</p>
+        <div className="p-3 bg-teal-50 dark:bg-teal-950/20 rounded-lg border border-teal-100/60 dark:border-teal-900/30">
+          <p className="font-bold text-teal-800 dark:text-teal-400 mb-1">🧩 Drop Components</p>
+          <p className="text-teal-900/80 dark:text-teal-300/80">Drag components from the Palette and drop them onto the center Phone Canvas.</p>
         </div>
-        <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100/60">
-          <p className="font-bold text-indigo-800 mb-1">⚙️ Custom Styling</p>
-          <p className="text-indigo-900/80">Select any element on the Canvas to adjust its custom properties in the Inspector.</p>
+        <div className="p-3 bg-indigo-50 dark:bg-indigo-950/20 rounded-lg border border-indigo-100/60 dark:border-indigo-900/30">
+          <p className="font-bold text-indigo-800 dark:text-indigo-400 mb-1">⚙️ Custom Styling</p>
+          <p className="text-indigo-900/80 dark:text-indigo-300/80">Select any element on the Canvas to adjust its custom properties in the Inspector.</p>
         </div>
-        <div className="p-3 bg-violet-50 rounded-lg border border-violet-100/60">
-          <p className="font-bold text-violet-800 mb-1">📄 Multiple Screens</p>
-          <p className="text-violet-900/80">Create new pages under the Screens tab, and use button Navigate actions to route between them.</p>
+        <div className="p-3 bg-violet-50 dark:bg-violet-950/20 rounded-lg border border-violet-100/60 dark:border-violet-900/30">
+          <p className="font-bold text-violet-800 dark:text-violet-400 mb-1">📄 Multiple Screens</p>
+          <p className="text-violet-900/80 dark:text-violet-300/80">Create new pages under the Screens tab, and use button Navigate actions to route between them.</p>
         </div>
-        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-          <p className="font-bold text-slate-800 mb-1">⚡ Interactive Preview</p>
-          <p className="text-slate-900/80">Switch to Preview mode in the toolbar to test sliders, switches, and checkboxes live.</p>
+        <div className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-lg border border-slate-200 dark:border-slate-800">
+          <p className="font-bold text-slate-800 dark:text-slate-200 mb-1">⚡ Interactive Preview</p>
+          <p className="text-slate-900/80 dark:text-slate-300/80">Switch to Preview mode in the toolbar to test sliders, switches, and checkboxes live.</p>
         </div>
-        <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100/60">
-          <p className="font-bold text-emerald-800 mb-1">📱 Export React Native</p>
-          <p className="text-emerald-900/80">Click Export RN or Export Expo to download a ready-to-run mobile template.</p>
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-100/60 dark:border-emerald-900/30">
+          <p className="font-bold text-emerald-800 dark:text-emerald-400 mb-1">📱 Export React Native</p>
+          <p className="text-emerald-900/80 dark:text-emerald-300/80">Click Export RN or Export Expo to download a ready-to-run mobile template.</p>
         </div>
       </div>
     </div>
@@ -280,6 +293,7 @@ function BuilderContent() {
   const addNode = useBuilderStore((state) => state.addNode);
   const moveNode = useBuilderStore((state) => state.moveNode);
   const mode = useBuilderStore((state) => state.mode);
+  const themeMode = useBuilderStore((state) => state.themeMode);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 4 },
@@ -367,20 +381,38 @@ function BuilderContent() {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
-      <div className="flex min-h-screen flex-col overflow-auto bg-[#f3f7f5] xl:h-screen xl:min-h-0 xl:overflow-hidden">
+      <AutosaveManager />
+      <div className={clsx("flex min-h-screen flex-col overflow-auto bg-[#f3f7f5] dark:bg-slate-950 xl:h-screen xl:min-h-0 xl:overflow-hidden transition-colors duration-200", themeMode === "dark" && "dark")}>
         <BuilderToolbar />
         <div className="flex min-h-0 flex-1 flex-col overflow-visible xl:flex-row xl:overflow-hidden">
           <ToolRail activeTab={activeTab} setActiveTab={setActiveTab} />
-          <div className="w-full shrink-0 border-b border-slate-200 bg-white/95 xl:w-[300px] xl:overflow-auto xl:border-r xl:border-b-0">
-            {activeTab === "components" && <ComponentPalette />}
+          <div className="w-full shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 xl:w-[350px] xl:border-r xl:border-b-0 flex flex-col h-full overflow-hidden transition-colors duration-200">
+            {activeTab === "projects" && (
+              <div className="p-4 overflow-y-auto h-full flex flex-col min-h-0">
+                <ProjectManager />
+              </div>
+            )}
+            {activeTab === "components" && (
+              <div className="overflow-y-auto h-full">
+                <ComponentPalette />
+              </div>
+            )}
             {activeTab === "screens" && (
-              <div className="p-4">
+              <div className="p-4 overflow-y-auto h-full flex flex-col min-h-0">
                 <ScreenManager />
               </div>
             )}
             {activeTab === "theme" && <ThemeManager />}
-            {activeTab === "settings" && <AppSettingsPanel />}
-            {activeTab === "help" && <HelpGuidePanel />}
+            {activeTab === "settings" && (
+              <div className="p-4 overflow-y-auto h-full">
+                <AppSettingsPanel />
+              </div>
+            )}
+            {activeTab === "help" && (
+              <div className="p-4 overflow-y-auto h-full">
+                <HelpGuidePanel />
+              </div>
+            )}
           </div>
           {mode === "edit" ? <BuilderCanvas /> : <PreviewPanel />}
           <PropertyInspector />
