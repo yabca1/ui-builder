@@ -187,6 +187,118 @@ function NodePreview({ node }: { node: MiniAppNode }) {
     );
   }
 
+  if (node.type === "shape") {
+    const shapeType = valueAsString(node.props.shapeType, "rectangle");
+    const width = valueAsNumber(style.width, 100);
+    const height = valueAsNumber(style.height, 100);
+    const bg = valueAsString(style.backgroundColor, "#3b82f6");
+    const stroke = valueAsString(style.borderColor, "transparent");
+    const strokeWidth = valueAsNumber(style.borderWidth, 0);
+    const rx = valueAsNumber(style.borderRadius, 0);
+
+    let svgContent = null;
+    if (shapeType === "rectangle") {
+      svgContent = (
+        <rect
+          x={strokeWidth / 2}
+          y={strokeWidth / 2}
+          width={Math.max(1, width - strokeWidth)}
+          height={Math.max(1, height - strokeWidth)}
+          rx={rx}
+          ry={rx}
+          fill={bg}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+        />
+      );
+    } else if (shapeType === "ellipse") {
+      svgContent = (
+        <ellipse
+          cx={width / 2}
+          cy={height / 2}
+          rx={Math.max(1, (width - strokeWidth) / 2)}
+          ry={Math.max(1, (height - strokeWidth) / 2)}
+          fill={bg}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+        />
+      );
+    } else if (shapeType === "triangle") {
+      const p1 = `${width / 2},${strokeWidth}`;
+      const p2 = `${width - strokeWidth},${height - strokeWidth}`;
+      const p3 = `${strokeWidth},${height - strokeWidth}`;
+      svgContent = (
+        <polygon
+          points={`${p1} ${p2} ${p3}`}
+          fill={bg}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
+      );
+    } else if (shapeType === "star") {
+      const cx = width / 2;
+      const cy = height / 2;
+      const spikes = 5;
+      const outerRadius = Math.max(1, (Math.min(width, height) - strokeWidth) / 2);
+      const innerRadius = outerRadius * 0.4;
+      
+      let rot = (Math.PI / 2) * 3;
+      let x = cx;
+      let y = cy;
+      const step = Math.PI / spikes;
+      const points: string[] = [];
+
+      for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        points.push(`${x},${y}`);
+        rot += step;
+
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        points.push(`${x},${y}`);
+        rot += step;
+      }
+
+      svgContent = (
+        <polygon
+          points={points.join(" ")}
+          fill={bg}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
+      );
+    } else if (shapeType === "line") {
+      svgContent = (
+        <line
+          x1={strokeWidth}
+          y1={height / 2}
+          x2={width - strokeWidth}
+          y2={height / 2}
+          stroke={bg}
+          strokeWidth={Math.max(1, strokeWidth || 2)}
+          strokeLinecap="round"
+        />
+      );
+    }
+
+    return (
+      <svg
+        width={width}
+        height={height}
+        style={{
+          width,
+          height,
+          opacity: style.opacity !== undefined ? Number(style.opacity) : 1,
+        }}
+      >
+        {svgContent}
+      </svg>
+    );
+  }
+
   if (node.type === "alert") {
     const variant = valueAsString(node.props.variant, "default");
     const isDestructive = variant === "destructive";
@@ -383,10 +495,12 @@ function NodePreview({ node }: { node: MiniAppNode }) {
   if (node.type === "heading") {
     const level = valueAsNumber(node.props.level, 1);
     const size = level === 1 ? 24 : level === 2 ? 20 : level === 3 ? 18 : 16;
+    const styleFontSize = style.fontSize;
+    const finalSize = (styleFontSize === 24 && level !== 1) ? size : valueAsNumber(styleFontSize, size);
     return (
       <div
         style={{
-          fontSize: valueAsNumber(style.fontSize, size),
+          fontSize: finalSize,
           fontWeight: valueAsString(style.fontWeight, "700"),
           color: valueAsString(style.color, "#111827"),
           textAlign: valueAsString(style.textAlign, "left") as React.CSSProperties["textAlign"],
@@ -642,7 +756,46 @@ function SortableNode({
   const deleteNode = useBuilderStore((state) => state.deleteNode);
   const activeDragId = useBuilderStore((state) => state.activeDragId);
   const activeOverId = useBuilderStore((state) => state.activeOverId);
+  const updateNodeStyle = useBuilderStore((state) => state.updateNodeStyle);
   const screen = useActiveScreen();
+
+  const handleResizeStart = (e: React.MouseEvent, direction: "width" | "height" | "both") => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const container = e.currentTarget.parentElement;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const startWidth = rect.width;
+    const startHeight = rect.height;
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+
+      const updates: Record<string, any> = {};
+
+      if (direction === "width" || direction === "both") {
+        updates.width = Math.max(20, Math.round(startWidth + deltaX));
+      }
+      if (direction === "height" || direction === "both") {
+        updates.height = Math.max(20, Math.round(startHeight + deltaY));
+      }
+
+      updateNodeStyle(node.id, updates);
+    };
+
+    const handleResizeEnd = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleResizeEnd);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleResizeEnd);
+  };
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: node.id,
@@ -761,7 +914,8 @@ function SortableNode({
       {canHaveChildren && containerTypes.includes(node.type) ? (
         <div
           className={clsx(
-            "w-full overflow-hidden",
+            "w-full",
+            node.type === "scrollArea" ? "overflow-hidden" : "overflow-visible",
             direction === "row" && "overflow-x-auto",
             ["container", "row", "column"].includes(node.type) && "flex rounded-lg border border-dashed border-slate-200",
             node.type === "card" && "flex flex-col border border-slate-200 shadow-sm bg-white rounded-xl",
@@ -849,6 +1003,28 @@ function SortableNode({
           <NodePreview node={node} />
         </div>
       )}
+      {isSelected && (
+        <>
+          {/* Edge drag zones (larger hit area) */}
+          <div
+            className="absolute -right-1 top-0 bottom-0 w-2.5 cursor-ew-resize z-30"
+            onMouseDown={(e) => handleResizeStart(e, "width")}
+          />
+          <div
+            className="absolute -bottom-1 left-0 right-0 h-2.5 cursor-ns-resize z-30"
+            onMouseDown={(e) => handleResizeStart(e, "height")}
+          />
+          <div
+            className="absolute -bottom-1 -right-1 size-3.5 cursor-nwse-resize z-30"
+            onMouseDown={(e) => handleResizeStart(e, "both")}
+          />
+
+          {/* Visual handles */}
+          <div className="pointer-events-none absolute -right-[4px] top-1/2 -translate-y-1/2 size-2 rounded-full border border-indigo-600 bg-white shadow-sm z-40" />
+          <div className="pointer-events-none absolute -bottom-[4px] left-1/2 -translate-x-1/2 size-2 rounded-full border border-indigo-600 bg-white shadow-sm z-40" />
+          <div className="pointer-events-none absolute -bottom-[4px] -right-[4px] size-2 rounded-full border border-indigo-600 bg-white shadow-sm z-40" />
+        </>
+      )}
     </div>
   );
 }
@@ -863,18 +1039,18 @@ export function BuilderCanvas() {
   const { setNodeRef, isOver } = useDroppable({ id: "drop:canvas" });
 
   const resolvedNodes = useMemo(() => {
-    const theme = miniApp.theme ?? themePresets.default;
+    const theme = (miniApp.theme && Object.keys(miniApp.theme).length > 0) ? miniApp.theme : themePresets.default;
     return screen.nodes.map((node) => resolveNodeTheme(node, theme, themeMode));
   }, [screen.nodes, miniApp.theme, themeMode]);
 
   const activeTheme = useMemo(() => {
-    const theme = miniApp.theme ?? themePresets.default;
+    const theme = (miniApp.theme && Object.keys(miniApp.theme).length > 0) ? miniApp.theme : themePresets.default;
     return theme[themeMode] ?? theme.light;
   }, [miniApp.theme, themeMode]);
 
   return (
-    <main className="builder-grid flex min-w-0 flex-1 flex-col items-center overflow-auto bg-slate-100/70 p-4 sm:p-6 xl:p-8">
-      <div className="mb-4 rounded-md border border-slate-200 bg-white/95 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 shadow-sm select-none">
+    <main className="builder-grid flex min-w-0 flex-1 flex-col items-center overflow-auto bg-slate-100/70 dark:bg-slate-950/20 p-4 sm:p-6 xl:p-8 transition-colors duration-150">
+      <div className="mb-4 rounded-md border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 shadow-sm select-none">
         {screen.name}
       </div>
       <div
@@ -904,7 +1080,7 @@ export function BuilderCanvas() {
               <SortableContext items={resolvedNodes.map((node) => node.id)} strategy={rectSortingStrategy}>
                 <div className="flex min-h-full flex-col gap-3">
                   {resolvedNodes.length === 0 ? (
-                    <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/70 text-sm font-semibold text-slate-400">
+                    <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 text-sm font-semibold text-slate-400 dark:text-slate-500">
                       Drop components here
                     </div>
                   ) : (
