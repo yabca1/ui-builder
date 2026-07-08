@@ -46,13 +46,30 @@ export function BuilderToolbar() {
   const screenSize = useBuilderStore((state) => state.screenSize);
   const scaleToFit = useBuilderStore((state) => state.scaleToFit);
   const zoom = useBuilderStore((state) => state.zoom);
+  const themeMode = useBuilderStore((state) => state.themeMode);
   const setMode = useBuilderStore((state) => state.setMode);
   const setScreenSize = useBuilderStore((state) => state.setScreenSize);
   const setScaleToFit = useBuilderStore((state) => state.setScaleToFit);
   const setZoom = useBuilderStore((state) => state.setZoom);
+  const setThemeMode = useBuilderStore((state) => state.setThemeMode);
   const resetProject = useBuilderStore((state) => state.resetProject);
   const setProjectName = useBuilderStore((state) => state.setProjectName);
   const setValidationErrors = useBuilderStore((state) => state.setValidationErrors);
+  const isSaving = useBuilderStore((state) => state.isSaving);
+  const dbStatus = useBuilderStore((state) => state.dbStatus);
+  const notification = useBuilderStore((state) => state.notification);
+  const setNotification = useBuilderStore((state) => state.setNotification);
+  const saveProject = useBuilderStore((state) => state.saveProject);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification, setNotification]);
+
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [exportTarget, setExportTarget] = useState<ExportTarget>("expo-mini-app");
@@ -125,29 +142,70 @@ export function BuilderToolbar() {
   };
 
   return (
-    <header className="flex min-h-14 flex-col gap-3 border-b border-slate-200 bg-white px-3 py-3 text-slate-900 shadow-sm sm:px-4 lg:flex-row lg:items-center lg:justify-between lg:py-2">
+    <header className="flex min-h-14 flex-col gap-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-3 text-slate-900 dark:text-slate-100 shadow-sm sm:px-4 lg:flex-row lg:items-center lg:justify-between lg:py-2 transition-colors duration-200">
       <div className="flex w-full min-w-0 flex-1 items-center gap-3 lg:w-auto">
         <div className="flex shrink-0 items-center gap-1.5">
           <span className="size-3 rounded-full bg-red-400" />
           <span className="size-3 rounded-full bg-yellow-400" />
           <span className="size-3 rounded-full bg-green-400" />
         </div>
-        <div className="h-8 min-w-0 max-w-[220px] flex-1 rounded-full bg-slate-100 px-4 text-xs font-medium leading-8 text-slate-500 sm:max-w-[360px]">
+        <div className="h-8 min-w-0 max-w-[220px] flex-1 rounded-full bg-slate-100 dark:bg-slate-950 px-4 text-xs font-medium leading-8 text-slate-500 dark:text-slate-400 sm:max-w-[360px]">
           www.builder.local
         </div>
-        <div className="hidden shrink-0 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm md:block">
+        <div className="hidden shrink-0 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 shadow-sm md:block">
           My Project
         </div>
         <input
           aria-label="Project name"
           value={miniApp.name}
           onChange={(event) => setProjectName(event.target.value)}
-          className="w-full min-w-0 max-w-none rounded-md border border-transparent bg-transparent px-2 py-1 text-base font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:border-slate-200 focus:bg-slate-50 sm:text-sm lg:max-w-64"
+          className="w-full min-w-0 max-w-none rounded-md border border-transparent bg-transparent px-2 py-1 text-base font-semibold text-slate-800 dark:text-slate-200 outline-none placeholder:text-slate-400 focus:border-slate-200 dark:focus:border-slate-700 focus:bg-slate-50 dark:focus:bg-slate-850 sm:text-sm lg:max-w-64"
         />
+        {/* Manual Save Button */}
+        <button
+          type="button"
+          onClick={() => saveProject()}
+          disabled={isSaving}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition shrink-0 select-none cursor-pointer"
+        >
+          {isSaving ? (
+            <svg className="animate-spin size-3 text-white" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          ) : (
+            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5h10.5a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0017.25 4.5H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+          )}
+          Save Project
+        </button>
+        {/* Status Indicator */}
+        <div className="flex items-center gap-1.5 ml-1 select-none">
+          {isSaving ? (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+              <svg className="animate-spin size-3 text-slate-400" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Saving...
+            </span>
+          ) : dbStatus === "offline" ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-black text-rose-600 border border-rose-100 shadow-sm animate-pulse">
+              <span className="size-1.5 rounded-full bg-rose-500" />
+              Offline
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 dark:bg-teal-950/40 px-2 py-0.5 text-[10px] font-bold text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-900/30 shadow-sm">
+              <span className="size-1.5 rounded-full bg-teal-500" />
+              Cloud Saved
+            </span>
+          )}
+        </div>
       </div>
       <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-5 lg:flex lg:w-auto lg:shrink-0 lg:flex-wrap lg:items-center lg:justify-end">
         <div className="col-span-2 flex items-center gap-1.5 sm:col-span-5 lg:col-span-1 lg:w-auto">
-          <div className="grid grid-cols-[1fr_72px_72px] gap-2 rounded-md border border-slate-200 bg-slate-50 p-1 w-full lg:w-auto">
+          <div className="grid grid-cols-[1fr_72px_72px] gap-2 rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-1 w-full lg:w-auto">
             <select
               aria-label="Screen preset"
               value={activePreset}
@@ -157,10 +215,10 @@ export function BuilderToolbar() {
                   setScreenSize({ width: preset.width, height: preset.height });
                 }
               }}
-              className="min-w-0 rounded border border-transparent bg-white px-2 py-1.5 text-xs font-semibold text-slate-600 outline-none focus:border-teal-300"
+              className="min-w-0 rounded border border-transparent bg-white dark:bg-slate-900 px-2 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 outline-none focus:border-teal-300 dark:focus:border-teal-700"
             >
               {screenPresets.map((preset) => (
-                <option key={preset.label} value={preset.label}>
+                <option key={preset.label} value={preset.label} className="dark:bg-slate-900 dark:text-slate-100">
                   {preset.label}
                 </option>
               ))}
@@ -178,7 +236,7 @@ export function BuilderToolbar() {
                   event.currentTarget.blur();
                 }
               }}
-              className="min-w-0 rounded border border-transparent bg-white px-2 py-1.5 text-xs font-semibold text-slate-600 outline-none focus:border-teal-300"
+              className="min-w-0 rounded border border-transparent bg-white dark:bg-slate-900 px-2 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 outline-none focus:border-teal-300 dark:focus:border-teal-700"
             />
             <input
               aria-label="Screen height"
@@ -193,7 +251,7 @@ export function BuilderToolbar() {
                   event.currentTarget.blur();
                 }
               }}
-              className="min-w-0 rounded border border-transparent bg-white px-2 py-1.5 text-xs font-semibold text-slate-600 outline-none focus:border-teal-300"
+              className="min-w-0 rounded border border-transparent bg-white dark:bg-slate-900 px-2 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 outline-none focus:border-teal-300 dark:focus:border-teal-700"
             />
           </div>
 
@@ -201,7 +259,7 @@ export function BuilderToolbar() {
             type="button"
             onClick={() => setScreenSize({ width: 240, height: 360 })}
             title="Minimize screen size (240 × 360)"
-            className="flex items-center justify-center size-8 shrink-0 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-teal-600 transition shadow-sm"
+            className="flex items-center justify-center size-8 shrink-0 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-teal-600 dark:hover:text-teal-400 transition shadow-sm cursor-pointer"
           >
             <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 14h6v-6M20 10h-6v6" />
@@ -211,39 +269,65 @@ export function BuilderToolbar() {
             type="button"
             onClick={() => setScreenSize({ width: 1024, height: 1366 })}
             title="Maximize screen size (1024 × 1366)"
-            className="flex items-center justify-center size-8 shrink-0 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-teal-600 transition shadow-sm"
+            className="flex items-center justify-center size-8 shrink-0 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-teal-600 dark:hover:text-teal-400 transition shadow-sm cursor-pointer"
           >
             <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
             </svg>
           </button>
 
-          <div className="flex items-center gap-1.5 shrink-0 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+          {/* Theme switcher */}
+          <button
+            type="button"
+            onClick={() => setThemeMode(themeMode === "light" ? "dark" : "light")}
+            title={themeMode === "light" ? "Switch Builder to Dark Mode" : "Switch Builder to Light Mode"}
+            className="flex items-center justify-center size-8 shrink-0 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-teal-600 dark:hover:text-teal-400 transition shadow-sm cursor-pointer"
+          >
+            {themeMode === "light" ? (
+              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            ) : (
+              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            )}
+          </button>
+
+          <div className="flex items-center gap-1.5 shrink-0 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 shadow-sm">
             <span className="text-slate-400 pl-1 select-none">Zoom</span>
             <select
               aria-label="Zoom Level"
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
-              className="bg-transparent border-none text-slate-700 outline-none pr-1 py-1 font-semibold cursor-pointer"
+              className="bg-transparent border-none text-slate-700 dark:text-slate-300 outline-none pr-1 py-1 font-semibold cursor-pointer"
             >
-              <option value={0.5}>50%</option>
-              <option value={0.75}>75%</option>
-              <option value={1.0}>100%</option>
-              <option value={1.25}>125%</option>
+              <option value={0.5} className="dark:bg-slate-900 dark:text-slate-100">50%</option>
+              <option value={0.75} className="dark:bg-slate-900 dark:text-slate-100">75%</option>
+              <option value={1.0} className="dark:bg-slate-900 dark:text-slate-100">100%</option>
+              <option value={1.25} className="dark:bg-slate-900 dark:text-slate-100">125%</option>
             </select>
           </div>
         </div>
         <button
           type="button"
           onClick={() => setMode(mode === "edit" ? "preview" : "edit")}
-          className="rounded-md border border-teal-600 bg-white px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+          className="rounded-md border border-teal-600 dark:border-teal-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-slate-800 cursor-pointer"
         >
           {mode === "edit" ? "Preview" : "Edit"}
         </button>
         <button
           type="button"
           onClick={() => runExport("copy")}
-          className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+          className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
         >
           <span className="hidden sm:inline">Copy JSON</span>
           <span className="sm:hidden">Copy</span>
@@ -251,21 +335,21 @@ export function BuilderToolbar() {
         <button
           type="button"
           onClick={() => setIsImportDialogOpen(true)}
-          className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-900/20 hover:bg-indigo-700 transition"
+          className="rounded-md bg-indigo-600 dark:bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-900/20 dark:shadow-none hover:bg-indigo-700 dark:hover:bg-indigo-600 transition cursor-pointer"
         >
           Import JSON
         </button>
         <button
           type="button"
           onClick={() => setIsExportDialogOpen(true)}
-          className="rounded-md bg-teal-500 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-teal-900/20 hover:bg-teal-600 transition"
+          className="rounded-md bg-teal-500 dark:bg-teal-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-teal-900/20 dark:shadow-none hover:bg-teal-600 dark:hover:bg-teal-750 transition cursor-pointer"
         >
           Export
         </button>
         <button
           type="button"
           onClick={resetProject}
-          className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-500 hover:bg-rose-50 hover:text-rose-600"
+          className="rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-600 dark:hover:text-rose-450 cursor-pointer"
         >
           Reset
         </button>
@@ -275,30 +359,30 @@ export function BuilderToolbar() {
 
       {isExportDialogOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Export Project</h2>
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl text-slate-900 dark:text-slate-100 transition-colors duration-150">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Export Project</h2>
             
             <div className="flex flex-col gap-3 mb-6">
               {/* Option 1: Expo Mini App */}
               <label className={clsx(
                 "flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition select-none text-left",
                 exportTarget === "expo-mini-app" 
-                  ? "border-teal-500 bg-teal-50/30 ring-2 ring-teal-100" 
-                  : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                  ? "border-teal-500 dark:border-teal-600 bg-teal-50/30 dark:bg-teal-950/20 ring-2 ring-teal-100 dark:ring-teal-950" 
+                  : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-850"
               )}>
                 <input
                   type="radio"
                   name="exportTarget"
                   checked={exportTarget === "expo-mini-app"}
                   onChange={() => setExportTarget("expo-mini-app")}
-                  className="mt-1 text-teal-600 focus:ring-teal-500"
+                  className="mt-1 text-teal-600 dark:text-teal-400 focus:ring-teal-500"
                 />
                 <div>
-                  <div className="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                  <div className="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     Expo Mini App
-                    <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-700">Recommended</span>
+                    <span className="rounded-full bg-teal-100 dark:bg-teal-950/60 px-2 py-0.5 text-[10px] font-bold text-teal-700 dark:text-teal-400 border border-teal-200/50 dark:border-teal-900/30">Recommended</span>
                   </div>
-                  <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  <div className="text-xs text-slate-500 dark:text-slate-450 mt-0.5 leading-relaxed">
                     Export code designed to be embedded inside an Expo/React Native super app.
                   </div>
                 </div>
@@ -308,19 +392,19 @@ export function BuilderToolbar() {
               <label className={clsx(
                 "flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition select-none text-left",
                 exportTarget === "expo-standalone" 
-                  ? "border-indigo-500 bg-indigo-50/30 ring-2 ring-indigo-100" 
-                  : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                  ? "border-indigo-500 dark:border-indigo-600 bg-indigo-50/30 dark:bg-indigo-950/20 ring-2 ring-indigo-100 dark:ring-indigo-950" 
+                  : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-850"
               )}>
                 <input
                   type="radio"
                   name="exportTarget"
                   checked={exportTarget === "expo-standalone"}
                   onChange={() => setExportTarget("expo-standalone")}
-                  className="mt-1 text-indigo-600 focus:ring-indigo-500"
+                  className="mt-1 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500"
                 />
                 <div>
-                  <div className="font-bold text-sm text-slate-800">Expo Standalone App</div>
-                  <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  <div className="font-bold text-sm text-slate-800 dark:text-slate-200">Expo Standalone App</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-450 mt-0.5 leading-relaxed">
                     Generate a complete Expo application that can run independently.
                   </div>
                 </div>
@@ -330,19 +414,19 @@ export function BuilderToolbar() {
               <label className={clsx(
                 "flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition select-none text-left",
                 exportTarget === "react-native-cli" 
-                  ? "border-slate-700 bg-slate-50 ring-2 ring-slate-100" 
-                  : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                  ? "border-slate-700 dark:border-slate-600 bg-slate-50 dark:bg-slate-950/40 ring-2 ring-slate-100 dark:ring-slate-900/50" 
+                  : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-850"
               )}>
                 <input
                   type="radio"
                   name="exportTarget"
                   checked={exportTarget === "react-native-cli"}
                   onChange={() => setExportTarget("react-native-cli")}
-                  className="mt-1 text-slate-800 focus:ring-slate-700"
+                  className="mt-1 text-slate-800 dark:text-slate-300 focus:ring-slate-700"
                 />
                 <div>
-                  <div className="font-bold text-sm text-slate-800">React Native CLI</div>
-                  <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  <div className="font-bold text-sm text-slate-800 dark:text-slate-200">React Native CLI</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-450 mt-0.5 leading-relaxed">
                     Generate a standard React Native project.
                   </div>
                 </div>
@@ -353,7 +437,7 @@ export function BuilderToolbar() {
               <button
                 type="button"
                 onClick={() => setIsExportDialogOpen(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-slate-200 dark:border-slate-800 px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer"
               >
                 Cancel
               </button>
@@ -361,12 +445,28 @@ export function BuilderToolbar() {
                 type="button"
                 onClick={() => void handleExportZip()}
                 disabled={isExporting}
-                className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 disabled:bg-slate-300 disabled:text-slate-500"
+                className="rounded-lg bg-teal-600 dark:bg-teal-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 dark:hover:bg-teal-600 disabled:bg-slate-300 dark:disabled:bg-slate-800 disabled:text-slate-500 dark:disabled:text-slate-550 cursor-pointer transition-colors"
               >
                 {isExporting ? "Exporting..." : "Export ZIP"}
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {notification && (
+        <div
+          onClick={() => setNotification(null)}
+          className={clsx(
+            "fixed bottom-4 right-4 z-[999] flex cursor-pointer items-center gap-2 rounded-xl px-4 py-3 text-xs font-bold shadow-xl border transition animate-bounce",
+            notification.type === "success" && "bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-400 border-teal-200 dark:border-teal-900/40",
+            notification.type === "error" && "bg-rose-50 dark:bg-rose-950/80 text-rose-800 dark:text-rose-400 border-rose-200 dark:border-rose-900/40",
+            notification.type === "info" && "bg-blue-50 dark:bg-blue-950/80 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-900/40"
+          )}
+        >
+          <span className="text-sm">
+            {notification.type === "success" ? "✓" : notification.type === "error" ? "⚠" : "ℹ"}
+          </span>
+          {notification.message}
         </div>
       )}
     </header>

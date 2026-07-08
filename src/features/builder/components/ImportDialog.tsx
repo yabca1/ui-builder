@@ -24,6 +24,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
 
   const importProject = useBuilderStore((state) => state.importProject);
   const importScreen = useBuilderStore((state) => state.importScreen);
+  const importComponents = useBuilderStore((state) => state.importComponents);
   const currentProject = useBuilderStore((state) => state.miniApp);
 
   if (!isOpen) return null;
@@ -229,7 +230,6 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
   const handleLoadComponentExample = (type: "image" | "button" | "card" | "list") => {
     const examples = {
       image: {
-        id: "example-image",
         type: "image",
         props: {
           sourceUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=320",
@@ -238,20 +238,17 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
         style: { width: 280, height: 160, borderRadius: 12 },
       },
       button: {
-        id: "example-button",
         type: "button",
         props: { label: "View Details" },
         style: { backgroundColor: { type: "theme", token: "primary" }, textColor: "#ffffff" },
         events: { onPress: { type: "navigate", screenId: "details" } },
       },
       card: {
-        id: "example-card",
         type: "card",
         style: { backgroundColor: { type: "theme", token: "card" }, borderColor: { type: "theme", token: "border" } },
-        children: [{ id: "card-text", type: "text", props: { text: "Card child content" } }],
+        children: [{ type: "text", props: { text: "Card child content" } }],
       },
       list: {
-        id: "example-list",
         type: "list",
         props: {
           title: "Products",
@@ -262,11 +259,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
         style: { color: { type: "theme", token: "text" }, gap: 8 },
       },
     };
-    setJsonText(JSON.stringify({
-      id: `${type}-example-screen`,
-      name: `${type.charAt(0).toUpperCase()}${type.slice(1)} Example`,
-      nodes: [examples[type]],
-    }, null, 2));
+    setJsonText(JSON.stringify(examples[type], null, 2));
     setImportMode("add");
     setValidationResult({ status: "idle", errors: [] });
   };
@@ -324,7 +317,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
           errors: [
             {
               path: "mode",
-              message: "Cannot replace project with a single screen definition. Paste full project JSON.",
+              message: `Cannot replace project with a ${result.type}. Use "Add to Screen" mode.`,
             },
           ],
         });
@@ -346,8 +339,10 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
         app.screens.forEach((screen) => {
           importScreen(screen);
         });
-      } else {
+      } else if (result.type === "screen") {
         importScreen(result.data as ScreenDefinition);
+      } else if (result.type === "components") {
+        importComponents(result.data as MiniAppNode[]);
       }
     }
 
@@ -357,19 +352,19 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl flex flex-col max-h-[85vh]">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-          <h2 className="text-lg font-bold text-slate-900">Import JSON Definition</h2>
+      <div className="w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl flex flex-col max-h-[85vh] text-slate-900 dark:text-slate-100">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Import JSON Definition</h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-sm font-semibold transition"
+            className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-sm font-semibold transition cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        <p className="text-xs text-slate-500 mb-3 leading-relaxed">
-          Paste your JSON code below or upload a <strong>.json</strong> file to load a screen or project structure.
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
+          Paste your JSON code below or upload a <strong>.json</strong> file to load a project, screen, or individual component(s).
         </p>
 
         <textarea
@@ -381,14 +376,14 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
             }
           }}
           placeholder={`{\n  "schemaVersion": 1,\n  "name": "My App",\n  "screens": [...]\n}`}
-          className="w-full flex-1 min-h-[220px] font-mono text-xs p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 outline-none resize-none transition overflow-y-auto"
+          className="w-full flex-1 min-h-[220px] font-mono text-xs p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-300 dark:focus:border-indigo-700 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 outline-none resize-none transition overflow-y-auto"
         />
 
         <div className="flex items-center gap-2 mt-2">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-semibold shadow-sm transition"
+            className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-350 rounded-lg text-xs font-semibold shadow-sm transition cursor-pointer"
           >
             Upload JSON File
           </button>
@@ -403,14 +398,14 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
             type="button"
             onClick={handleFormatJson}
             disabled={!jsonText.trim()}
-            className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-semibold shadow-sm transition disabled:opacity-50"
+            className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-350 rounded-lg text-xs font-semibold shadow-sm transition disabled:opacity-50 cursor-pointer"
           >
             Format
           </button>
           <button
             type="button"
             onClick={handleLoadExample}
-            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
+            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold transition cursor-pointer"
           >
             Load Example
           </button>
@@ -420,7 +415,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
                 key={type}
                 type="button"
                 onClick={() => handleLoadComponentExample(type)}
-                className="px-2 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-lg text-[11px] font-semibold shadow-sm transition capitalize"
+                className="px-2 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg text-[11px] font-semibold shadow-sm transition capitalize cursor-pointer"
               >
                 {type}
               </button>
@@ -428,10 +423,10 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
           </div>
         </div>
 
-        <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl mt-4">
-          <h4 className="text-xs font-bold text-slate-700 mb-2">Import Mode</h4>
+        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-3.5 rounded-xl mt-4">
+          <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Import Mode</h4>
           <div className="flex gap-4">
-            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer select-none">
               <input
                 type="radio"
                 name="importMode"
@@ -441,7 +436,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
               />
               Replace Current Project
             </label>
-            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer select-none">
               <input
                 type="radio"
                 name="importMode"
@@ -449,24 +444,24 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
                 onChange={() => setImportMode("add")}
                 className="text-indigo-600 focus:ring-indigo-500"
               />
-              Add as New Screen
+              Add to Project (Appends screens / inserts components)
             </label>
           </div>
         </div>
 
         <div className="mt-4 flex-1 overflow-y-auto max-h-[120px] pr-1">
           {validationResult.status === "valid" && (
-            <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-lg text-xs font-semibold">
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-400 rounded-lg text-xs font-semibold">
               ✓ Schema validation successful! Project rendering...
             </div>
           )}
           {validationResult.status === "invalid" && (
-            <div className="p-3 bg-rose-50 border border-rose-100 text-rose-800 rounded-lg text-xs">
-              <div className="font-bold mb-1.5">✕ Validation failed:</div>
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 text-rose-800 dark:text-rose-450 rounded-lg text-xs animate-pulse">
+              <div className="font-bold mb-1.5 text-rose-700 dark:text-rose-400">✕ Validation failed:</div>
               <ul className="list-disc pl-4 flex flex-col gap-1">
                 {validationResult.errors.map((err, idx) => (
                   <li key={idx} className="leading-relaxed">
-                    <span className="font-semibold font-mono text-[11px] bg-rose-100 px-1 py-0.5 rounded text-rose-900 mr-1">
+                    <span className="font-semibold font-mono text-[11px] bg-rose-100 dark:bg-rose-900/40 px-1 py-0.5 rounded text-rose-900 dark:text-rose-300 mr-1">
                       {err.path}
                     </span>
                     {err.message}
@@ -477,18 +472,18 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-3 mt-4 border-t border-slate-100 pt-3">
+        <div className="flex items-center justify-end gap-3 mt-4 border-t border-slate-100 dark:border-slate-800 pt-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+            className="rounded-lg border border-slate-200 dark:border-slate-800 px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleValidateAndRender}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+            className="rounded-lg bg-indigo-600 dark:bg-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition cursor-pointer"
           >
             Validate & Render
           </button>
