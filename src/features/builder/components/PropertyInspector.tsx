@@ -15,7 +15,7 @@ function numberValue(value: unknown, fallback = 0) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-500">
+    <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
       {label}
       {children}
     </label>
@@ -26,7 +26,7 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+      className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20"
     />
   );
 }
@@ -35,7 +35,19 @@ function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100 cursor-pointer"
+      className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 cursor-pointer"
+    />
+  );
+}
+
+function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      {...props}
+      className={clsx(
+        "rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20",
+        props.className
+      )}
     />
   );
 }
@@ -50,7 +62,7 @@ function SegmentedControl<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div className="flex rounded-lg bg-slate-100 p-0.5 w-full">
+    <div className="flex rounded-lg bg-slate-100 dark:bg-slate-950 p-0.5 w-full">
       {options.map((option) => {
         const isActive = option.value === value;
         return (
@@ -61,8 +73,8 @@ function SegmentedControl<T extends string>({
             className={clsx(
               "flex-1 rounded-md py-1.5 text-center text-xs font-semibold transition select-none cursor-pointer",
               isActive
-                ? "bg-white text-slate-800 shadow-sm"
-                : "text-slate-500 hover:text-slate-800"
+                ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
             )}
           >
             {option.label}
@@ -76,7 +88,7 @@ function SegmentedControl<T extends string>({
 function ColorField({ value, onChange }: { value: string; onChange: (val: string) => void }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="relative size-8 shrink-0 overflow-hidden rounded-lg border border-slate-200 shadow-sm bg-slate-50">
+      <div className="relative size-8 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm bg-slate-50 dark:bg-slate-950">
         <input
           type="color"
           value={value}
@@ -88,7 +100,7 @@ function ColorField({ value, onChange }: { value: string; onChange: (val: string
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+        className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-205 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20"
         placeholder="#000000"
       />
     </div>
@@ -127,14 +139,14 @@ function ThemeableColorField({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex justify-between items-center">
-        <span className="text-xs font-semibold text-slate-500">{label}</span>
-        <div className="flex gap-1 bg-slate-100 p-0.5 rounded">
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{label}</span>
+        <div className="flex gap-1 bg-slate-100 dark:bg-slate-950 p-0.5 rounded">
           <button
             type="button"
             onClick={() => onChange(rawColor)}
             className={clsx(
-              "px-1.5 py-0.5 text-[9px] font-bold rounded",
-              !isToken ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+              "px-1.5 py-0.5 text-[9px] font-bold rounded cursor-pointer",
+              !isToken ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm" : "text-slate-500 dark:text-slate-450"
             )}
           >
             Custom
@@ -143,8 +155,8 @@ function ThemeableColorField({
             type="button"
             onClick={() => onChange({ type: "theme", token: "primary" })}
             className={clsx(
-              "px-1.5 py-0.5 text-[9px] font-bold rounded",
-              isToken ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+              "px-1.5 py-0.5 text-[9px] font-bold rounded cursor-pointer",
+              isToken ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm" : "text-slate-500 dark:text-slate-450"
             )}
           >
             Theme
@@ -155,10 +167,10 @@ function ThemeableColorField({
         <select
           value={activeToken}
           onChange={(e) => onChange({ type: "theme", token: e.target.value })}
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100 cursor-pointer"
+          className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 cursor-pointer"
         >
           {colors.map((c) => (
-            <option key={c} value={c}>
+            <option key={c} value={c} className="dark:bg-slate-900 dark:text-slate-100">
               Theme {c.charAt(0).toUpperCase() + c.slice(1)}
             </option>
           ))}
@@ -197,14 +209,14 @@ function ThemeableSizeField({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex justify-between items-center">
-        <span className="text-xs font-semibold text-slate-500">{label}</span>
-        <div className="flex gap-1 bg-slate-100 p-0.5 rounded">
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{label}</span>
+        <div className="flex gap-1 bg-slate-100 dark:bg-slate-950 p-0.5 rounded">
           <button
             type="button"
             onClick={() => onChange(rawValue)}
             className={clsx(
-              "px-1.5 py-0.5 text-[9px] font-bold rounded",
-              !isToken ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+              "px-1.5 py-0.5 text-[9px] font-bold rounded cursor-pointer",
+              !isToken ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm" : "text-slate-500 dark:text-slate-450"
             )}
           >
             Custom
@@ -213,8 +225,8 @@ function ThemeableSizeField({
             type="button"
             onClick={() => onChange({ type: "theme", token: tokens[0] })}
             className={clsx(
-              "px-1.5 py-0.5 text-[9px] font-bold rounded",
-              isToken ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+              "px-1.5 py-0.5 text-[9px] font-bold rounded cursor-pointer",
+              isToken ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm" : "text-slate-500 dark:text-slate-450"
             )}
           >
             Theme
@@ -225,10 +237,10 @@ function ThemeableSizeField({
         <select
           value={activeToken}
           onChange={(e) => onChange({ type: "theme", token: e.target.value })}
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100 cursor-pointer"
+          className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-205 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 cursor-pointer"
         >
           {tokens.map((t) => (
-            <option key={t} value={t}>
+            <option key={t} value={t} className="dark:bg-slate-900 dark:text-slate-100">
               Theme {t}
             </option>
           ))}
@@ -238,7 +250,7 @@ function ThemeableSizeField({
           type="number"
           value={rawValue === undefined ? "" : rawValue}
           onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+          className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-205 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20"
         />
       )}
     </div>
@@ -317,7 +329,7 @@ function SpacingControl({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-slate-500">{label}</span>
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{label}</span>
         <button
           type="button"
           onClick={() => {
@@ -340,7 +352,7 @@ function SpacingControl({
               });
             }
           }}
-          className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 cursor-pointer select-none"
+          className="text-[10px] font-bold text-indigo-500 hover:text-indigo-755 dark:text-indigo-400 dark:hover:text-indigo-300 cursor-pointer select-none"
         >
           {isIndividual ? "All same" : "Individual"}
         </button>
@@ -360,44 +372,44 @@ function SpacingControl({
               [`${prefix}Left`]: undefined,
             })
           }
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+          className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-205 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20"
         />
       ) : (
         <div className="grid grid-cols-2 gap-2">
-          <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-400">
+          <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
             Top
             <input
               type="number"
               value={topVal}
               onChange={(e) => onChange({ [`${prefix}Top`]: Number(e.target.value) })}
-              className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs outline-none focus:border-indigo-300 focus:bg-white"
+              className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2 py-1 text-xs text-slate-900 dark:text-slate-200 outline-none focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-400">
+          <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
             Right
             <input
               type="number"
               value={rightVal}
               onChange={(e) => onChange({ [`${prefix}Right`]: Number(e.target.value) })}
-              className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs outline-none focus:border-indigo-300 focus:bg-white"
+              className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2 py-1 text-xs text-slate-900 dark:text-slate-200 outline-none focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-400">
+          <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
             Bottom
             <input
               type="number"
               value={bottomVal}
               onChange={(e) => onChange({ [`${prefix}Bottom`]: Number(e.target.value) })}
-              className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs outline-none focus:border-indigo-300 focus:bg-white"
+              className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2 py-1 text-xs text-slate-900 dark:text-slate-200 outline-none focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-400">
+          <label className="flex flex-col gap-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
             Left
             <input
               type="number"
               value={leftVal}
               onChange={(e) => onChange({ [`${prefix}Left`]: Number(e.target.value) })}
-              className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs outline-none focus:border-indigo-300 focus:bg-white"
+              className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2 py-1 text-xs text-slate-900 dark:text-slate-200 outline-none focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900"
             />
           </label>
         </div>
@@ -408,8 +420,8 @@ function SpacingControl({
 
 function InspectorSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border-b border-slate-100 py-3.5 flex flex-col gap-3">
-      <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 select-none">
+    <div className="border-b border-slate-100 dark:border-slate-800 py-3.5 flex flex-col gap-3">
+      <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500 select-none">
         {title}
       </h3>
       {children}
@@ -425,7 +437,7 @@ export function PropertyInspector() {
   const updateNodeStyle = useBuilderStore((state) => state.updateNodeStyle);
   const updateNodeAction = useBuilderStore((state) => state.updateNodeAction);
 
-  const setActionType = (type: "none" | "navigate" | "goBack" | "showAlert") => {
+  const setActionType = (type: "none" | "navigate" | "goBack" | "showAlert" | "showToast" | "setVariable") => {
     if (!node) return;
 
     if (type === "none") {
@@ -434,8 +446,12 @@ export function PropertyInspector() {
       updateNodeAction(node.id, { type: "navigate", screenId: miniApp.screens[0].id });
     } else if (type === "goBack") {
       updateNodeAction(node.id, { type: "goBack" });
-    } else {
+    } else if (type === "showAlert") {
       updateNodeAction(node.id, { type: "showAlert", message: "Action Triggered" });
+    } else if (type === "showToast") {
+      updateNodeAction(node.id, { type: "showToast", message: "Toast notification" });
+    } else if (type === "setVariable") {
+      updateNodeAction(node.id, { type: "setVariable", variable: "myVar", value: "newValue" });
     }
   };
 
@@ -450,27 +466,27 @@ export function PropertyInspector() {
   ].includes(node.type);
 
   return (
-    <aside className="w-full shrink-0 overflow-auto border-t border-slate-200 bg-white p-4 xl:w-80 xl:border-t-0 xl:border-l">
+    <aside className="w-full shrink-0 overflow-auto border-t xl:border-t-0 xl:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-4 xl:w-80 transition-colors duration-150">
       <div className="mb-5">
-        <h2 className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 select-none">App Pages</h2>
+        <h2 className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500 select-none">App Pages</h2>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {miniApp.screens.map((screen) => (
             <div
               key={screen.id}
-              className="h-16 w-11 shrink-0 rounded-md border border-teal-200 bg-[linear-gradient(135deg,#dbeafe,#dcfce7)] p-1 shadow-sm"
+              className="h-16 w-11 shrink-0 rounded-md border border-teal-200 dark:border-teal-800/40 bg-[linear-gradient(135deg,#dbeafe,#dcfce7)] dark:bg-gradient-to-br dark:from-indigo-950 dark:to-teal-950 p-1 shadow-sm"
               title={screen.name}
             >
-              <div className="h-full rounded border border-white/80 bg-white/35" />
+              <div className="h-full rounded border border-white/80 dark:border-slate-800/80 bg-white/35 dark:bg-slate-950/20" />
             </div>
           ))}
         </div>
       </div>
       
-      <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 select-none">Properties</h2>
+      <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-555 dark:text-slate-450 select-none">Properties</h2>
       
       {node ? (
         <div className="flex flex-col">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold capitalize text-slate-800 mb-2">
+          <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold capitalize text-slate-800 dark:text-slate-200 mb-2">
             {node.type}
           </div>
 
@@ -490,7 +506,24 @@ export function PropertyInspector() {
                 <Field label="Heading Level">
                   <SegmentedControl
                     value={String(node.props.level ?? 1)}
-                    onChange={(level) => updateNodeProps(node.id, { level: Number(level) })}
+                    onChange={(level) => {
+                      const levelNum = Number(level);
+                      updateNodeProps(node.id, { level: levelNum });
+                      // Clear font size override if it is one of the standard sizes
+                      // or if it matches the default 24px, to ensure level-based inheritance works.
+                      const currentFontSize = node.style?.fontSize;
+                      if (
+                        currentFontSize === undefined ||
+                        currentFontSize === 24 ||
+                        currentFontSize === 20 ||
+                        currentFontSize === 18 ||
+                        currentFontSize === 16
+                      ) {
+                        const newStyle = { ...node.style };
+                        delete newStyle.fontSize;
+                        updateNodeStyle(node.id, newStyle);
+                      }
+                    }}
                     options={[
                       { value: "1", label: "H1" },
                       { value: "2", label: "H2" },
@@ -673,10 +706,10 @@ export function PropertyInspector() {
                   <TextInput value={textValue(node.props.label)} onChange={(e) => updateNodeProps(node.id, { label: e.target.value })} />
                 </Field>
                 <Field label="Options (one per line)">
-                  <textarea
+                  <TextArea
                     value={textValue(node.props.options)}
                     onChange={(e) => updateNodeProps(node.id, { options: e.target.value })}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100 min-h-20"
+                    className="min-h-20"
                   />
                 </Field>
                 <Field label="Selected Value">
@@ -699,10 +732,10 @@ export function PropertyInspector() {
             {node.type === "tabs" && (
               <>
                 <Field label="Tabs (one per line)">
-                  <textarea
+                  <TextArea
                     value={textValue(node.props.tabs)}
                     onChange={(e) => updateNodeProps(node.id, { tabs: e.target.value })}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100 min-h-20"
+                    className="min-h-20"
                   />
                 </Field>
                 <Field label="Active Tab">
@@ -714,6 +747,21 @@ export function PropertyInspector() {
             {node.type === "aspectRatio" && (
               <Field label="Aspect Ratio (width / height)">
                 <TextInput type="number" step="0.01" value={numberValue(node.props.ratio, 1.77)} onChange={(e) => updateNodeProps(node.id, { ratio: Number(e.target.value) })} />
+              </Field>
+            )}
+
+            {node.type === "shape" && (
+              <Field label="Shape Type">
+                <Select
+                  value={textValue(node.props.shapeType) || "rectangle"}
+                  onChange={(e) => updateNodeProps(node.id, { shapeType: e.target.value })}
+                >
+                  <option value="rectangle">Rectangle</option>
+                  <option value="ellipse">Ellipse</option>
+                  <option value="triangle">Triangle</option>
+                  <option value="star">Star</option>
+                  <option value="line">Line</option>
+                </Select>
               </Field>
             )}
 
@@ -743,10 +791,10 @@ export function PropertyInspector() {
                   <TextInput value={textValue(node.props.title)} onChange={(e) => updateNodeProps(node.id, { title: e.target.value })} />
                 </Field>
                 <Field label="List Items (one per line)">
-                  <textarea
+                  <TextArea
                     value={textValue(node.props.items)}
                     onChange={(e) => updateNodeProps(node.id, { items: e.target.value })}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100 min-h-24"
+                    className="min-h-24"
                   />
                 </Field>
                 <Field label="List Style">
@@ -987,8 +1035,8 @@ export function PropertyInspector() {
             </Field>
           </InspectorSection>
 
-          {/* Section 7: Actions (button only) */}
-          {node.type === "button" && (
+          {/* Section 7: Actions */}
+          {node && (
             <InspectorSection title="Actions">
               <Field label="On Press trigger">
                 <Select value={node.events?.onPress?.type ?? "none"} onChange={(e) => setActionType(e.target.value as any)}>
@@ -996,6 +1044,8 @@ export function PropertyInspector() {
                   <option value="navigate">Navigate to Screen</option>
                   <option value="goBack">Go Back</option>
                   <option value="showAlert">Show Alert Notification</option>
+                  <option value="showToast">Show Toast Notification</option>
+                  <option value="setVariable">Set State Variable</option>
                 </Select>
               </Field>
 
@@ -1016,20 +1066,37 @@ export function PropertyInspector() {
                   <TextInput value={node.events.onPress.message} onChange={(e) => updateAction({ type: "showAlert", message: e.target.value })} />
                 </Field>
               )}
+
+              {node.events?.onPress?.type === "showToast" && (
+                <Field label="Toast message">
+                  <TextInput value={node.events.onPress.message} onChange={(e) => updateAction({ type: "showToast", message: e.target.value })} />
+                </Field>
+              )}
+
+              {node.events?.onPress?.type === "setVariable" && (
+                <div className="flex flex-col gap-3">
+                  <Field label="Variable name">
+                    <TextInput value={node.events.onPress.variable} onChange={(e) => updateAction({ type: "setVariable", variable: e.target.value, value: node.events?.onPress?.type === "setVariable" ? node.events.onPress.value : "" })} />
+                  </Field>
+                  <Field label="Value to set">
+                    <TextInput value={String(node.events.onPress.value ?? "")} onChange={(e) => updateAction({ type: "setVariable", variable: node.events?.onPress?.type === "setVariable" ? node.events.onPress.variable : "myVar", value: e.target.value })} />
+                  </Field>
+                </div>
+              )}
             </InspectorSection>
           )}
 
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-sm font-semibold text-slate-400 select-none">
+        <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 p-6 text-center text-sm font-semibold text-slate-400 dark:text-slate-500 select-none">
           Select a component on the canvas to configure properties.
         </div>
       )}
 
       {validationErrors.length > 0 && (
-        <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4">
-          <div className="mb-2 text-sm font-bold text-rose-700 select-none">Validation errors</div>
-          <ul className="flex list-disc flex-col gap-1 pl-4 text-xs text-rose-600 leading-relaxed">
+        <div className="mt-5 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/20 p-4">
+          <div className="mb-2 text-sm font-bold text-rose-700 dark:text-rose-400 select-none">Validation errors</div>
+          <ul className="flex list-disc flex-col gap-1 pl-4 text-xs text-rose-600 dark:text-rose-450 leading-relaxed">
             {validationErrors.map((error) => (
               <li key={error}>{error}</li>
             ))}
