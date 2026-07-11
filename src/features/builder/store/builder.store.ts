@@ -4,7 +4,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ComponentType, MiniApp, MiniAppAction, MiniAppNode, MiniAppTheme, ScreenDefinition } from "@/mini-app/types/mini-app.types";
 import { canInsertNode, cloneNode, findNode, findParentAndIndex, insertNode, isDescendant, makeNode, removeNode, updateNode } from "@/features/builder/utils/node-tree";
-import { themePresets } from "@/mini-app/registry/theme-presets";
+import { themePresets, defaultSpacing, defaultRadius, defaultShadows, defaultTypography } from "@/mini-app/registry/theme-presets";
+import { componentRegistry } from "@/mini-app/registry/component-registry";
 
 type EditorMode = "edit" | "preview";
 
@@ -56,6 +57,28 @@ type BuilderState = {
   resetProject: () => void;
   importProject: (miniApp: MiniApp) => void;
   importScreen: (screen: ScreenDefinition) => void;
+  importComponents: (nodes: MiniAppNode[]) => void;
+  
+  // Project Persistence additions
+  projects: MiniApp[];
+  isSaving: boolean;
+  isLoadingProject: boolean;
+  dbStatus: "online" | "offline";
+  dbError: string | null;
+  notification: { type: "success" | "error" | "info"; message: string } | null;
+  setNotification: (notification: { type: "success" | "error" | "info"; message: string } | null) => void;
+  setIsSaving: (isSaving: boolean) => void;
+  setIsLoadingProject: (isLoading: boolean) => void;
+  setDbStatus: (status: "online" | "offline", error?: string | null) => void;
+  fetchProjects: () => Promise<void>;
+  loadProject: (id: string) => Promise<void>;
+  createNewProject: (name?: string) => Promise<void>;
+  duplicateProject: (id: string) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  renameProject: (id: string, newName: string) => Promise<void>;
+  clearTheme: () => void;
+  createTheme: () => void;
+  saveProject: () => Promise<void>;
 };
 
 function sampleMiniApp(): MiniApp {
@@ -121,6 +144,15 @@ function clampScreenSize(screenSize: ScreenSize): ScreenSize {
   };
 }
 
+function getUniqueScreenName(screens: any[], baseName: string, excludeId?: string): string {
+  let name = baseName;
+  let count = 1;
+  while (screens.some((s) => s.name.toUpperCase() === name.toUpperCase() && s.id !== excludeId)) {
+    name = `${baseName} (${count++})`;
+  }
+  return name;
+}
+
 function updateCurrentScreen(miniApp: MiniApp, activeScreenId: string, updater: (nodes: MiniAppNode[]) => MiniAppNode[]): MiniApp {
   return {
     ...miniApp,
@@ -138,6 +170,16 @@ export const useBuilderStore = create<BuilderState>()(
   persist(
     (set) => ({
       miniApp: sampleMiniApp(),
+      projects: [],
+      isSaving: false,
+      isLoadingProject: false,
+      dbStatus: "online",
+      dbError: null,
+      notification: null,
+      setNotification: (notification) => set({ notification }),
+      setIsSaving: (isSaving) => set({ isSaving }),
+      setIsLoadingProject: (isLoadingProject) => set({ isLoadingProject }),
+      setDbStatus: (dbStatus, dbError = null) => set({ dbStatus, dbError }),
       activeScreenId: "home",
       screenSize: defaultScreenSize,
       scaleToFit: true,
@@ -162,22 +204,28 @@ export const useBuilderStore = create<BuilderState>()(
         })),
       createScreen: () => {
         const id = `screen-${crypto.randomUUID().slice(0, 8)}`;
-        set((state) => ({
-          miniApp: {
-            ...state.miniApp,
-            screens: [...state.miniApp.screens, { id, name: "New Screen", nodes: [] }],
-          },
-          activeScreenId: id,
-          selectedNodeId: null,
-        }));
+        set((state) => {
+          const uniqueName = getUniqueScreenName(state.miniApp.screens, "New Screen");
+          return {
+            miniApp: {
+              ...state.miniApp,
+              screens: [...state.miniApp.screens, { id, name: uniqueName, nodes: [] }],
+            },
+            activeScreenId: id,
+            selectedNodeId: null,
+          };
+        });
       },
       renameScreen: (screenId, name) =>
-        set((state) => ({
-          miniApp: {
-            ...state.miniApp,
-            screens: state.miniApp.screens.map((screen) => (screen.id === screenId ? { ...screen, name } : screen)),
-          },
-        })),
+        set((state) => {
+          const uniqueName = getUniqueScreenName(state.miniApp.screens, name, screenId);
+          return {
+            miniApp: {
+              ...state.miniApp,
+              screens: state.miniApp.screens.map((screen) => (screen.id === screenId ? { ...screen, name: uniqueName } : screen)),
+            },
+          };
+        }),
       deleteScreen: (screenId) =>
         set((state) => {
           if (state.miniApp.screens.length === 1) {
@@ -382,41 +430,43 @@ export const useBuilderStore = create<BuilderState>()(
         }),
       importTheme: (themeJson) =>
         set((state) => {
-          try {
-            const parsed = JSON.parse(themeJson);
-            const defaultTheme = themePresets.default;
-            const mergedTheme = {
-              name: parsed.name || "custom",
-              light: {
-                colors: { ...defaultTheme.light.colors, ...parsed.light?.colors },
-                spacing: { ...defaultTheme.light.spacing, ...parsed.light?.spacing },
-                radius: { ...defaultTheme.light.radius, ...parsed.light?.radius },
-                shadows: { ...defaultTheme.light.shadows, ...parsed.light?.shadows },
-                typography: { ...defaultTheme.light.typography, ...parsed.light?.typography },
-              },
-              dark: {
-                colors: { ...defaultTheme.dark.colors, ...parsed.dark?.colors },
-                spacing: { ...defaultTheme.dark.spacing, ...parsed.dark?.spacing },
-                radius: { ...defaultTheme.dark.radius, ...parsed.dark?.radius },
-                shadows: { ...defaultTheme.dark.shadows, ...parsed.dark?.shadows },
-                typography: { ...defaultTheme.dark.typography, ...parsed.dark?.typography },
-              },
-            };
-            return {
-              miniApp: {
-                ...state.miniApp,
-                theme: mergedTheme,
-              },
-            };
-          } catch (e) {
-            console.error("Failed to parse imported theme JSON", e);
-            return {};
+          const parsed = JSON.parse(themeJson);
+          if (!parsed || typeof parsed !== "object") {
+            throw new Error("Theme must be a valid JSON object.");
           }
+          const defaultTheme = themePresets.default;
+          const mergedTheme = {
+            name: parsed.name || "custom",
+            light: {
+              colors: { ...defaultTheme.light.colors, ...parsed.light?.colors },
+              spacing: { ...defaultTheme.light.spacing, ...parsed.light?.spacing },
+              radius: { ...defaultTheme.light.radius, ...parsed.light?.radius },
+              shadows: { ...defaultTheme.light.shadows, ...parsed.light?.shadows },
+              typography: { ...defaultTheme.light.typography, ...parsed.light?.typography },
+            },
+            dark: {
+              colors: { ...defaultTheme.dark.colors, ...parsed.dark?.colors },
+              spacing: { ...defaultTheme.dark.spacing, ...parsed.dark?.spacing },
+              radius: { ...defaultTheme.dark.radius, ...parsed.dark?.radius },
+              shadows: { ...defaultTheme.dark.shadows, ...parsed.dark?.shadows },
+              typography: { ...defaultTheme.dark.typography, ...parsed.dark?.typography },
+            },
+          };
+          return {
+            miniApp: {
+              ...state.miniApp,
+              theme: mergedTheme,
+            },
+          };
         }),
       resetProject: () => {
         localStorage.removeItem("mini-app-builder");
-        set({
-          miniApp: sampleMiniApp(),
+        set((state) => ({
+          miniApp: {
+            ...sampleMiniApp(),
+            id: state.miniApp.id, // keep the same project ID for DB sync
+            name: state.miniApp.name, // keep the project name
+          },
           activeScreenId: "home",
           screenSize: defaultScreenSize,
           scaleToFit: true,
@@ -427,7 +477,7 @@ export const useBuilderStore = create<BuilderState>()(
           activeOverId: null,
           zoom: 1.0,
           themeMode: "light",
-        });
+        }));
       },
       importProject: (miniApp) =>
         set((state) => {
@@ -483,6 +533,389 @@ export const useBuilderStore = create<BuilderState>()(
             validationErrors: [],
           };
         }),
+      importComponents: (nodesToImport) =>
+        set((state) => {
+          const screen = activeScreen(state.miniApp, state.activeScreenId);
+          if (!screen) return state;
+
+          const parentId = state.selectedNodeId;
+          const parentNode = parentId ? findNode(screen.nodes, parentId) : null;
+          const targetParentId = parentNode && componentRegistry[parentNode.type].canHaveChildren ? parentId : null;
+
+          const sanitizedNodes = nodesToImport.map(cloneNode);
+
+          return {
+            miniApp: updateCurrentScreen(state.miniApp, state.activeScreenId, (nodes) => {
+              let updated = [...nodes];
+              sanitizedNodes.forEach((node) => {
+                const index = targetParentId ? findNode(updated, targetParentId)?.children?.length ?? 0 : updated.length;
+                updated = insertNode(updated, targetParentId, index, node);
+              });
+              return updated;
+            }),
+            selectedNodeId: sanitizedNodes[sanitizedNodes.length - 1]?.id ?? state.selectedNodeId,
+            validationErrors: [],
+          };
+        }),
+      fetchProjects: async () => {
+        try {
+          const res = await fetch("/api/projects");
+          if (!res.ok) throw new Error("Failed to fetch projects");
+          const projects = await res.json();
+          set({ projects, dbStatus: "online", dbError: null });
+        } catch (err: any) {
+          console.error("fetchProjects error:", err);
+          set({ dbStatus: "offline", dbError: err.message });
+          set({
+            notification: {
+              type: "error",
+              message: `Offline: Cannot connect to project database.`,
+            },
+          });
+        }
+      },
+      loadProject: async (id: string) => {
+        set({ isLoadingProject: true });
+        try {
+          const res = await fetch(`/api/projects/${id}`);
+          if (!res.ok) {
+            if (res.status === 404) {
+              throw new Error("Project not found");
+            }
+            throw new Error("Failed to load project");
+          }
+          const project = await res.json();
+          
+          let activeScreenId = project.entryScreenId;
+          const hasEntryScreen = project.screens.some((s: any) => s.id === activeScreenId);
+          if (!activeScreenId || !hasEntryScreen) {
+            activeScreenId = project.screens[0]?.id || "";
+          }
+
+          localStorage.setItem("lastOpenedProjectId", project.id);
+
+          set({
+            miniApp: project,
+            activeScreenId,
+            selectedNodeId: null,
+            activeDragId: null,
+            activeOverId: null,
+            validationErrors: [],
+            dbStatus: "online",
+            dbError: null,
+            notification: {
+              type: "success",
+              message: `Loaded project "${project.name}"`,
+            },
+          });
+        } catch (err: any) {
+          console.error("loadProject error:", err);
+          set({
+            notification: {
+              type: "error",
+              message: `Failed to load project: ${err.message}`,
+            },
+          });
+        } finally {
+          set({ isLoadingProject: false });
+        }
+      },
+      createNewProject: async (name?: string) => {
+        set({ isLoadingProject: true });
+        try {
+          const newProjectData = {
+            schemaVersion: 1,
+            name: name || "Untitled Project",
+            entryScreenId: "home",
+            screens: [
+              {
+                id: "home",
+                name: "Home",
+                nodes: [],
+              },
+            ],
+            theme: themePresets.default,
+            version: "1.0.0",
+            ownerId: null,
+          };
+
+          const res = await fetch("/api/projects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newProjectData),
+          });
+
+          if (!res.ok) throw new Error("Failed to create new project");
+          const createdProject = await res.json();
+
+          localStorage.setItem("lastOpenedProjectId", createdProject.id);
+
+          set((state) => ({
+            miniApp: createdProject,
+            activeScreenId: createdProject.entryScreenId || "home",
+            selectedNodeId: null,
+            activeDragId: null,
+            activeOverId: null,
+            validationErrors: [],
+            projects: [createdProject, ...state.projects],
+            dbStatus: "online",
+            dbError: null,
+            notification: {
+              type: "success",
+              message: `Created project "${createdProject.name}"`,
+            },
+          }));
+        } catch (err: any) {
+          console.error("createNewProject error:", err);
+          set({
+            notification: {
+              type: "error",
+              message: `Failed to create project: ${err.message}`,
+            },
+          });
+        } finally {
+          set({ isLoadingProject: false });
+        }
+      },
+      duplicateProject: async (id: string) => {
+        set({ isSaving: true });
+        try {
+          const projectRes = await fetch(`/api/projects/${id}`);
+          if (!projectRes.ok) throw new Error("Failed to fetch project to duplicate");
+          const targetProject = await projectRes.json();
+
+          const duplicatedProject = {
+            ...serializeProject(targetProject),
+            name: `${targetProject.name} Copy`,
+            id: undefined, // Let API generate a new project ID
+          };
+
+          const res = await fetch("/api/projects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(duplicatedProject),
+          });
+
+          if (!res.ok) throw new Error("Failed to save duplicated project");
+          const savedProject = await res.json();
+
+          set((state) => ({
+            projects: [savedProject, ...state.projects],
+            dbStatus: "online",
+            dbError: null,
+            notification: {
+              type: "success",
+              message: `Duplicated to "${savedProject.name}"`,
+            },
+          }));
+        } catch (err: any) {
+          console.error("duplicateProject error:", err);
+          set({
+            notification: {
+              type: "error",
+              message: `Failed to duplicate project: ${err.message}`,
+            },
+          });
+        } finally {
+          set({ isSaving: false });
+        }
+      },
+      deleteProject: async (id: string) => {
+        try {
+          const res = await fetch(`/api/projects/${id}`, {
+            method: "DELETE",
+          });
+
+          if (!res.ok) throw new Error("Failed to delete project");
+
+          set((state) => {
+            const nextProjects = state.projects.filter((p) => p.id !== id);
+            const isCurrentlyOpen = state.miniApp.id === id;
+
+            if (isCurrentlyOpen) {
+              setTimeout(() => {
+                const updatedProjects = useBuilderStore.getState().projects;
+                if (updatedProjects.length > 0) {
+                  useBuilderStore.getState().loadProject(updatedProjects[0].id);
+                } else {
+                  useBuilderStore.getState().createNewProject();
+                }
+              }, 0);
+            }
+
+            return {
+              projects: nextProjects,
+              dbStatus: "online",
+              dbError: null,
+              notification: {
+                type: "success",
+                message: `Project deleted successfully`,
+              },
+            };
+          });
+        } catch (err: any) {
+          console.error("deleteProject error:", err);
+          set({
+            notification: {
+              type: "error",
+              message: `Failed to delete project: ${err.message}`,
+            },
+          });
+        }
+      },
+      renameProject: async (id: string, newName: string) => {
+        try {
+          const isActive = useBuilderStore.getState().miniApp.id === id;
+          if (isActive) {
+            set((state) => ({
+              miniApp: { ...state.miniApp, name: newName },
+            }));
+          }
+
+          const targetProject = useBuilderStore.getState().projects.find((p) => p.id === id) || 
+            (isActive ? useBuilderStore.getState().miniApp : null);
+          
+          if (!targetProject) throw new Error("Project not found in memory");
+
+          const updated = {
+            ...targetProject,
+            name: newName,
+          };
+
+          const res = await fetch(`/api/projects/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updated),
+          });
+
+          if (!res.ok) throw new Error("Failed to update project name");
+          const saved = await res.json();
+
+          set((state) => ({
+            projects: state.projects.map((p) => (p.id === id ? saved : p)),
+            dbStatus: "online",
+            dbError: null,
+          }));
+        } catch (err: any) {
+          console.error("renameProject error:", err);
+          set({
+            notification: {
+              type: "error",
+              message: `Failed to rename project: ${err.message}`,
+            },
+          });
+        }
+      },
+      clearTheme: () => {
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            theme: {},
+          },
+          notification: {
+            type: "info",
+            message: "Custom theme cleared from memory. Save to apply to database.",
+          },
+        }));
+      },
+      createTheme: () => {
+        const blankTheme = {
+          name: "custom",
+          light: {
+            colors: {
+              primary: "#000000",
+              secondary: "#64748b",
+              success: "#22c55e",
+              warning: "#eab308",
+              danger: "#ef4444",
+              background: "#ffffff",
+              surface: "#f8fafc",
+              card: "#ffffff",
+              border: "#e2e8f0",
+              text: "#000000",
+              mutedText: "#64748b",
+            },
+            spacing: defaultSpacing,
+            radius: defaultRadius,
+            shadows: defaultShadows,
+            typography: defaultTypography,
+          },
+          dark: {
+            colors: {
+              primary: "#ffffff",
+              secondary: "#94a3b8",
+              success: "#22c55e",
+              warning: "#eab308",
+              danger: "#ef4444",
+              background: "#09090b",
+              surface: "#18181b",
+              card: "#18181b",
+              border: "#27272a",
+              text: "#ffffff",
+              mutedText: "#a1a1aa",
+            },
+            spacing: defaultSpacing,
+            radius: defaultRadius,
+            shadows: defaultShadows,
+            typography: defaultTypography,
+          },
+        };
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            theme: blankTheme,
+          },
+          notification: {
+            type: "info",
+            message: "New custom theme initialized. Save to apply to database.",
+          },
+        }));
+      },
+      saveProject: async () => {
+        set({ isSaving: true });
+        try {
+          const project = useBuilderStore.getState().miniApp;
+          const payload = serializeProject(project);
+
+          const res = await fetch(`/api/projects/${project.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Save failed");
+          }
+
+          const savedProject = await res.json();
+
+          set({
+            miniApp: savedProject,
+            dbStatus: "online",
+            dbError: null,
+            notification: {
+              type: "success",
+              message: `Project and theme "${savedProject.name}" saved to database.`,
+            },
+          });
+
+          // Refresh sidebar projects list
+          await useBuilderStore.getState().fetchProjects();
+        } catch (err: any) {
+          console.error("Manual save error:", err);
+          set({
+            dbStatus: "offline",
+            dbError: err.message,
+            notification: {
+              type: "error",
+              message: `Failed to save: ${err.message}`,
+            },
+          });
+        } finally {
+          set({ isSaving: false });
+        }
+      },
     }),
     {
       name: "mini-app-builder",
@@ -500,4 +933,29 @@ export function useSelectedNode() {
 
 export function useActiveScreen() {
   return useBuilderStore((state) => activeScreen(state.miniApp, state.activeScreenId));
+}
+
+export function serializeProject(project: any) {
+  if (!project) return null;
+  return {
+    schemaVersion: project.schemaVersion || 1,
+    id: project.id,
+    name: project.name,
+    entryScreenId: project.entryScreenId || "",
+    theme: project.theme || {},
+    screens: project.screens || [],
+    ownerId: project.ownerId !== undefined ? project.ownerId : null,
+  };
+}
+
+export function serializeProjectForAutosave(project: any) {
+  if (!project) return null;
+  return {
+    schemaVersion: project.schemaVersion || 1,
+    id: project.id,
+    name: project.name,
+    entryScreenId: project.entryScreenId || "",
+    screens: project.screens || [],
+    ownerId: project.ownerId !== undefined ? project.ownerId : null,
+  };
 }

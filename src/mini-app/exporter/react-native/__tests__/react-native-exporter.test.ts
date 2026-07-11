@@ -7,7 +7,7 @@ import { generateScreen } from "@/mini-app/exporter/react-native/generate-screen
 import { generateStyles } from "@/mini-app/exporter/react-native/generate-styles";
 import { screenComponentName, sanitizeIdentifier } from "@/mini-app/exporter/react-native/identifiers";
 import { ImportCollector } from "@/mini-app/exporter/react-native/imports";
-import type { MiniApp, MiniAppNode } from "@/mini-app/types/mini-app.types";
+import type { MiniApp, MiniAppNode, ScreenDefinition } from "@/mini-app/types/mini-app.types";
 
 function sampleMiniApp(): MiniApp {
   return {
@@ -131,6 +131,36 @@ describe("React Native exporter", () => {
     expect(styles.stylesCode).toContain('alignItems: "stretch"');
   });
 
+  it("generates ScrollView with layout styles mapped to contentContainerStyle", () => {
+    const imports = new ImportCollector();
+    const rowNode = {
+      id: "scrollable-row",
+      type: "row" as const,
+      props: {},
+      style: {
+        direction: "horizontal",
+        alignItems: "center",
+        justifyContent: "space-between",
+      },
+      children: [
+        { id: "child-1", type: "text" as const, props: { text: "C1" } },
+        { id: "child-2", type: "text" as const, props: { text: "C2" } },
+      ],
+    };
+
+    const styles = generateStyles([rowNode]);
+    const output = generateNode(rowNode, {
+      imports,
+      styleNames: styles.styleNames,
+      screens: [],
+    });
+
+    expect(output).toContain("<ScrollView");
+    expect(output).toContain("StyleSheet.flatten(styles.scrollableRow)");
+    expect(output).toContain("contentContainerStyle: { alignItems, justifyContent, ...(hasAlign ? { flexGrow: 1 } : {}) }");
+    expect(imports.renderReactNativeImport()).toContain("StyleSheet");
+  });
+
   it("resolves separator style properties correctly", () => {
     const styles = generateStyles([
       {
@@ -163,7 +193,7 @@ describe("React Native exporter", () => {
       screens: sampleMiniApp().screens,
     });
 
-    expect(output).toContain("<View");
+    expect(output).toContain("<ScrollView");
     expect(output).toContain("<Text");
     expect(output).toContain("<TextInput");
     expect(output).toContain('navigation.navigate("Profile")');
@@ -216,7 +246,7 @@ describe("React Native exporter", () => {
     const homeScreen = result.files.find((file) => file.path === "src/screens/HomeScreen.tsx");
     expect(homeScreen?.content).toMatchInlineSnapshot(`
       "import React from "react";
-      import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+      import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
       import type { NativeStackScreenProps } from "@react-navigation/native-stack";
       import type { MiniAppStackParamList } from "../navigation/MiniAppNavigator";
 
@@ -225,7 +255,24 @@ describe("React Native exporter", () => {
       export function HomeScreen({ navigation }: HomeScreenProps) {
         return (
           <View style={styles.root}>
-            <View className="gap-3 rounded-xl" style={styles.homeContainer}>
+            <ScrollView
+              className="rounded-xl"
+              contentContainerClassName="gap-3"
+              {...(() => {
+                const { alignItems, justifyContent, ...style } = StyleSheet.flatten(
+                  styles.homeContainer,
+                );
+                const hasAlign = alignItems !== undefined || justifyContent !== undefined;
+                return {
+                  style,
+                  contentContainerStyle: {
+                    alignItems,
+                    justifyContent,
+                    ...(hasAlign ? { flexGrow: 1 } : {}),
+                  },
+                };
+              })()}
+            >
               <Text className="text-zinc-900" style={styles.title}>
                 {"Welcome"}
               </Text>
@@ -240,7 +287,7 @@ describe("React Native exporter", () => {
               >
                 <Text className="font-semibold text-white">{"Open Profile"}</Text>
               </Pressable>
-            </View>
+            </ScrollView>
           </View>
         );
       }
@@ -422,5 +469,57 @@ describe("React Native exporter", () => {
     expect(output).toContain("backgroundColor: \"#e4e4e7\"");
     expect(imports.renderReactNativeImport()).toContain("View");
     expect(imports.renderReactNativeImport()).toContain("Text");
+  });
+
+  it("generates correct showToast and setVariable React Native actions", () => {
+    const imports = new ImportCollector();
+    const btnNode: MiniAppNode = {
+      id: "toast-btn",
+      type: "button",
+      props: { label: "Toast Button" },
+      events: {
+        onPress: {
+          type: "showToast",
+          message: "Toast trigger clicked",
+        },
+      },
+    };
+
+    const styles = generateStyles([btnNode]);
+    const output = generateNode(btnNode, {
+      imports,
+      styleNames: styles.styleNames,
+      screens: [],
+    });
+
+    expect(output).toContain("ToastAndroid.show(");
+    expect(output).toContain("Toast trigger clicked");
+    expect(output).toContain("Platform.OS");
+    expect(imports.renderReactNativeImport()).toContain("ToastAndroid");
+    expect(imports.renderReactNativeImport()).toContain("Platform");
+
+    // Test setVariable action state injection
+    const screen: ScreenDefinition = {
+      id: "details",
+      name: "Details",
+      nodes: [
+        {
+          id: "set-btn",
+          type: "button",
+          props: { label: "Click to set" },
+          events: {
+            onPress: {
+              type: "setVariable",
+              variable: "userName",
+              value: "Alice",
+            },
+          },
+        },
+      ],
+    };
+
+    const screenCode = generateScreen(screen, [screen]);
+    expect(screenCode).toContain('const [userName, setUserName] = React.useState("Alice");');
+    expect(screenCode).toContain('setUserName("Alice")');
   });
 });
