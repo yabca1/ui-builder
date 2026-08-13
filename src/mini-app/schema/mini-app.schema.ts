@@ -55,6 +55,63 @@ export const screenDefinitionSchema = z.object({
   nodes: z.array(miniAppNodeSchema),
 });
 
+const themeColorsSchema = z.object({
+  primary: z.string().min(1),
+  secondary: z.string().min(1),
+  success: z.string().min(1),
+  warning: z.string().min(1),
+  danger: z.string().min(1),
+  background: z.string().min(1),
+  surface: z.string().min(1),
+  card: z.string().min(1),
+  border: z.string().min(1),
+  text: z.string().min(1),
+  mutedText: z.string().min(1),
+});
+
+const themeSpacingSchema = z.object({
+  xs: z.number(),
+  sm: z.number(),
+  md: z.number(),
+  lg: z.number(),
+  xl: z.number(),
+  xxl: z.number(),
+});
+
+const themeRadiusSchema = z.object({
+  sm: z.number(),
+  md: z.number(),
+  lg: z.number(),
+  xl: z.number(),
+});
+
+const themeShadowsSchema = z.object({
+  sm: z.record(z.string(), z.unknown()),
+  md: z.record(z.string(), z.unknown()),
+  lg: z.record(z.string(), z.unknown()),
+});
+
+const themeTypographySchema = z.object({
+  fontFamily: z.string().min(1),
+  headingSize: z.number(),
+  subheadingSize: z.number(),
+  bodySize: z.number(),
+  captionSize: z.number(),
+});
+
+const modeThemeSchema = z.object({
+  colors: themeColorsSchema,
+  spacing: themeSpacingSchema,
+  radius: themeRadiusSchema,
+  shadows: themeShadowsSchema,
+  typography: themeTypographySchema,
+});
+
+const miniAppThemeSchema = z.object({
+  light: modeThemeSchema,
+  dark: modeThemeSchema,
+});
+
 export const miniAppSchema = z
   .object({
     id: z.string().min(1),
@@ -62,6 +119,7 @@ export const miniAppSchema = z
     version: z.string().min(1),
     entryScreenId: z.string().min(1),
     screens: z.array(screenDefinitionSchema).min(1),
+    theme: miniAppThemeSchema.optional(),
   })
   .superRefine((app, ctx) => {
     const screenIds = new Set<string>();

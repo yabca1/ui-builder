@@ -2,7 +2,7 @@ import prettier from "prettier/standalone";
 import estreePlugin from "prettier/plugins/estree";
 import typescriptPlugin from "prettier/plugins/typescript";
 import { miniAppSchema } from "@/mini-app/schema/mini-app.schema";
-import type { MiniApp, MiniAppNode, ExportTarget } from "@/mini-app/types/mini-app.types";
+import type { MiniApp, MiniAppNode, ExportTarget, MiniAppTheme } from "@/mini-app/types/mini-app.types";
 import { generateNavigation } from "@/mini-app/exporter/react-native/generate-navigation";
 import { generatePackageJson } from "@/mini-app/exporter/react-native/generate-package-json";
 import { generateScreen } from "@/mini-app/exporter/react-native/generate-screen";
@@ -15,6 +15,7 @@ import {
   generateNativeWindEnv,
   generateTailwindConfig,
 } from "@/mini-app/exporter/react-native/nativewind-config";
+import { themePresets } from "@/mini-app/registry/theme-presets";
 
 export type GeneratedProjectFile = {
   path: string;
@@ -184,7 +185,7 @@ ${components.map((component) => `- ${component}`).join("\n")}
 `;
 }
 
-function nativeWindFiles(target: "expo-mini-app" | "expo-standalone"): GeneratedProjectFile[] {
+function nativeWindFiles(target: "expo-mini-app" | "expo-standalone", theme?: MiniAppTheme): GeneratedProjectFile[] {
   return [
     {
       path: "global.css",
@@ -192,7 +193,7 @@ function nativeWindFiles(target: "expo-mini-app" | "expo-standalone"): Generated
     },
     {
       path: "tailwind.config.js",
-      content: generateTailwindConfig(target),
+      content: generateTailwindConfig(target, theme),
     },
     {
       path: "metro.config.js",
@@ -207,6 +208,38 @@ function nativeWindFiles(target: "expo-mini-app" | "expo-standalone"): Generated
       content: generateNativeWindEnv(),
     },
   ];
+}
+
+function generateThemeFile(appTheme?: MiniAppTheme): string {
+  const theme = appTheme ?? themePresets.default;
+  return `import { createContext, useContext, useState } from "react";
+
+export const themePresets = ${JSON.stringify(theme, null, 2)};
+
+export const ThemeContext = createContext({
+  mode: "light" as "light" | "dark",
+  theme: themePresets.light,
+  setMode: (mode: "light" | "dark") => {},
+});
+
+export function useTheme() {
+  return useContext(ThemeContext);
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [mode, setMode] = useState<"light" | "dark">("light");
+  const value = {
+    mode,
+    theme: themePresets[mode],
+    setMode,
+  };
+  return (
+    <ThemeContext.Provider value={value}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+`;
 }
 
 export async function generateProject(miniApp: MiniApp, target: ExportTarget): Promise<GenerateProjectResult> {
@@ -240,7 +273,11 @@ export async function generateProject(miniApp: MiniApp, target: ExportTarget): P
     }
 
     files.push(
-      ...nativeWindFiles("expo-mini-app"),
+      ...nativeWindFiles("expo-mini-app", validMiniApp.theme),
+      {
+        path: "src/theme/theme.ts",
+        content: await formatCode(generateThemeFile(validMiniApp.theme)),
+      },
       {
         path: "src/navigation/MiniAppNavigator.tsx",
         content: await formatCode(generateNavigation(validMiniApp, target)),
@@ -304,7 +341,11 @@ export function ${pascalName}MiniApp() {
     }
 
     files.push(
-      ...nativeWindFiles("expo-standalone"),
+      ...nativeWindFiles("expo-standalone", validMiniApp.theme),
+      {
+        path: "theme.ts",
+        content: await formatCode(generateThemeFile(validMiniApp.theme)),
+      },
       {
         path: "app/_layout.tsx",
         content: await formatCode(`import "../global.css";

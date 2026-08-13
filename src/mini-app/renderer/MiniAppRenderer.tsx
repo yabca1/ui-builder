@@ -3,9 +3,11 @@
 import { useMemo, useState, useEffect } from "react";
 import type { MiniApp, MiniAppAction, MiniAppNode } from "@/mini-app/types/mini-app.types";
 import { clsx } from "clsx";
+import { resolveNodeTheme, themePresets } from "@/mini-app/registry/theme-presets";
 
 type MiniAppRendererProps = {
   miniApp: MiniApp;
+  themeMode?: "light" | "dark";
 };
 
 type RenderNodeProps = {
@@ -894,14 +896,30 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
   return null;
 }
 
-export function MiniAppRenderer({ miniApp }: MiniAppRendererProps) {
+export function MiniAppRenderer({ miniApp, themeMode = "light" }: MiniAppRendererProps) {
   const [currentScreenId, setCurrentScreenId] = useState(miniApp.entryScreenId);
   const [history, setHistory] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
 
+  const resolvedMiniApp = useMemo(() => {
+    const theme = miniApp.theme ?? themePresets.default;
+    return {
+      ...miniApp,
+      screens: miniApp.screens.map((screen) => ({
+        ...screen,
+        nodes: screen.nodes.map((node) => resolveNodeTheme(node, theme, themeMode)),
+      })),
+    };
+  }, [miniApp, themeMode]);
+
+  const activeTheme = useMemo(() => {
+    const theme = miniApp.theme ?? themePresets.default;
+    return theme[themeMode] ?? theme.light;
+  }, [miniApp.theme, themeMode]);
+
   const screen = useMemo(
-    () => miniApp.screens.find((candidate) => candidate.id === currentScreenId) ?? miniApp.screens[0],
-    [currentScreenId, miniApp.screens],
+    () => resolvedMiniApp.screens.find((candidate) => candidate.id === currentScreenId) ?? resolvedMiniApp.screens[0],
+    [currentScreenId, resolvedMiniApp.screens],
   );
 
   const runAction = (action: MiniAppAction | undefined) => {
@@ -934,8 +952,19 @@ export function MiniAppRenderer({ miniApp }: MiniAppRendererProps) {
   };
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden bg-white p-5">
-      <div className="mb-4 text-xs font-semibold uppercase tracking-wide text-zinc-500 shrink-0">{screen?.name}</div>
+    <div
+      className="relative flex h-full w-full flex-col overflow-hidden p-5 transition-colors duration-200"
+      style={{
+        backgroundColor: activeTheme.colors.background,
+        color: activeTheme.colors.text,
+      }}
+    >
+      <div
+        className="mb-4 text-xs font-semibold uppercase tracking-wide shrink-0 transition-colors"
+        style={{ color: activeTheme.colors.mutedText }}
+      >
+        {screen?.name}
+      </div>
       <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-0.5">
         {screen?.nodes.map((node) => <RenderNode key={node.id} node={node} runAction={runAction} />)}
       </div>

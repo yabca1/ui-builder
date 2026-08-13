@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, useSortable, rectSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -9,6 +10,7 @@ import type { MiniAppNode, ComponentType } from "@/mini-app/types/mini-app.types
 import { useActiveScreen, useBuilderStore } from "@/features/builder/store/builder.store";
 import { ResizableScreenFrame } from "@/features/builder/components/ResizableScreenFrame";
 import { findNode, canInsertNode } from "@/features/builder/utils/node-tree";
+import { resolveNodeTheme, themePresets } from "@/mini-app/registry/theme-presets";
 
 const containerTypes = ["container", "row", "column", "card", "scrollArea", "accordion", "tabs", "aspectRatio"];
 
@@ -840,7 +842,19 @@ export function BuilderCanvas() {
   const selectNode = useBuilderStore((state) => state.selectNode);
   const zoom = useBuilderStore((state) => state.zoom);
   const screenSize = useBuilderStore((state) => state.screenSize);
+  const miniApp = useBuilderStore((state) => state.miniApp);
+  const themeMode = useBuilderStore((state) => state.themeMode);
   const { setNodeRef, isOver } = useDroppable({ id: "drop:canvas" });
+
+  const resolvedNodes = useMemo(() => {
+    const theme = miniApp.theme ?? themePresets.default;
+    return screen.nodes.map((node) => resolveNodeTheme(node, theme, themeMode));
+  }, [screen.nodes, miniApp.theme, themeMode]);
+
+  const activeTheme = useMemo(() => {
+    const theme = miniApp.theme ?? themePresets.default;
+    return theme[themeMode] ?? theme.light;
+  }, [miniApp.theme, themeMode]);
 
   return (
     <main className="builder-grid flex min-w-0 flex-1 flex-col items-center overflow-auto bg-slate-100/70 p-4 sm:p-6 xl:p-8">
@@ -865,20 +879,20 @@ export function BuilderCanvas() {
           className="shrink-0"
         >
           <ResizableScreenFrame
-            className="bg-slate-50"
+            className="transition-colors duration-200"
             contentClassName="overflow-auto p-4"
             isHighlighted={isOver}
             onClick={() => selectNode(null)}
           >
-            <div ref={setNodeRef} className="min-h-full">
-              <SortableContext items={screen.nodes.map((node) => node.id)} strategy={rectSortingStrategy}>
+            <div ref={setNodeRef} className="min-h-full transition-colors duration-200" style={{ backgroundColor: activeTheme.colors.background }}>
+              <SortableContext items={resolvedNodes.map((node) => node.id)} strategy={rectSortingStrategy}>
                 <div className="flex min-h-full flex-col gap-3">
-                  {screen.nodes.length === 0 ? (
+                  {resolvedNodes.length === 0 ? (
                     <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/70 text-sm font-semibold text-slate-400">
                       Drop components here
                     </div>
                   ) : (
-                    screen.nodes.map((node) => <SortableNode key={node.id} node={node} />)
+                    resolvedNodes.map((node) => <SortableNode key={node.id} node={node} />)
                   )}
                 </div>
               </SortableContext>

@@ -95,6 +95,156 @@ function ColorField({ value, onChange }: { value: string; onChange: (val: string
   );
 }
 
+function ThemeableColorField({
+  label,
+  value,
+  onChange,
+  defaultColor = "#000000",
+}: {
+  label: string;
+  value: unknown;
+  onChange: (val: unknown) => void;
+  defaultColor?: string;
+}) {
+  const isToken = value && typeof value === "object" && (value as any).type === "theme";
+  const activeToken = isToken ? (value as any).token : "";
+  const rawColor = isToken ? defaultColor : (typeof value === "string" ? value : defaultColor);
+
+  const colors = [
+    "primary",
+    "secondary",
+    "success",
+    "warning",
+    "danger",
+    "background",
+    "surface",
+    "card",
+    "border",
+    "text",
+    "mutedText",
+  ];
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex justify-between items-center">
+        <span className="text-xs font-semibold text-slate-500">{label}</span>
+        <div className="flex gap-1 bg-slate-100 p-0.5 rounded">
+          <button
+            type="button"
+            onClick={() => onChange(rawColor)}
+            className={clsx(
+              "px-1.5 py-0.5 text-[9px] font-bold rounded",
+              !isToken ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+            )}
+          >
+            Custom
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({ type: "theme", token: "primary" })}
+            className={clsx(
+              "px-1.5 py-0.5 text-[9px] font-bold rounded",
+              isToken ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+            )}
+          >
+            Theme
+          </button>
+        </div>
+      </div>
+      {isToken ? (
+        <select
+          value={activeToken}
+          onChange={(e) => onChange({ type: "theme", token: e.target.value })}
+          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100 cursor-pointer"
+        >
+          {colors.map((c) => (
+            <option key={c} value={c}>
+              Theme {c.charAt(0).toUpperCase() + c.slice(1)}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <ColorField value={rawColor} onChange={onChange} />
+      )}
+    </div>
+  );
+}
+
+function ThemeableSizeField({
+  label,
+  value,
+  onChange,
+  tokenType,
+  defaultValue = 0,
+}: {
+  label: string;
+  value: unknown;
+  onChange: (val: unknown) => void;
+  tokenType: "spacing" | "radius" | "typography";
+  defaultValue?: number;
+}) {
+  const isToken = value && typeof value === "object" && (value as any).type === "theme";
+  const activeToken = isToken ? (value as any).token : "";
+  const rawValue = isToken ? defaultValue : (typeof value === "number" ? value : defaultValue);
+
+  const tokens =
+    tokenType === "spacing"
+      ? ["xs", "sm", "md", "lg", "xl", "xxl"]
+      : tokenType === "radius"
+      ? ["sm", "md", "lg", "xl"]
+      : ["headingSize", "subheadingSize", "bodySize", "captionSize"];
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex justify-between items-center">
+        <span className="text-xs font-semibold text-slate-500">{label}</span>
+        <div className="flex gap-1 bg-slate-100 p-0.5 rounded">
+          <button
+            type="button"
+            onClick={() => onChange(rawValue)}
+            className={clsx(
+              "px-1.5 py-0.5 text-[9px] font-bold rounded",
+              !isToken ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+            )}
+          >
+            Custom
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({ type: "theme", token: tokens[0] })}
+            className={clsx(
+              "px-1.5 py-0.5 text-[9px] font-bold rounded",
+              isToken ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+            )}
+          >
+            Theme
+          </button>
+        </div>
+      </div>
+      {isToken ? (
+        <select
+          value={activeToken}
+          onChange={(e) => onChange({ type: "theme", token: e.target.value })}
+          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100 cursor-pointer"
+        >
+          {tokens.map((t) => (
+            <option key={t} value={t}>
+              Theme {t}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type="number"
+          value={rawValue === undefined ? "" : rawValue}
+          onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
+          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+        />
+      )}
+    </div>
+  );
+}
+
 function SizeControl({
   label,
   value,
@@ -722,9 +872,13 @@ export function PropertyInspector() {
             <SpacingControl label="Padding" prefix="padding" style={node.style ?? {}} onChange={(updates) => updateNodeStyle(node.id, updates)} />
             <SpacingControl label="Margin" prefix="margin" style={node.style ?? {}} onChange={(updates) => updateNodeStyle(node.id, updates)} />
             {["container", "row", "column", "card", "scrollArea", "list"].includes(node.type) && (
-              <Field label="Gap / Spacing">
-                <TextInput type="number" value={node.style?.gap !== undefined ? String(node.style.gap) : ""} placeholder="0" onChange={(e) => updateNodeStyle(node.id, { gap: e.target.value ? Number(e.target.value) : undefined })} />
-              </Field>
+              <ThemeableSizeField
+                label="Gap / Spacing"
+                value={node.style?.gap}
+                tokenType="spacing"
+                defaultValue={8}
+                onChange={(val) => updateNodeStyle(node.id, { gap: val })}
+              />
             )}
           </InspectorSection>
 
@@ -739,9 +893,13 @@ export function PropertyInspector() {
                 </Select>
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Font size">
-                  <TextInput type="number" value={numberValue(node.style?.fontSize, node.type === "heading" ? 24 : 16)} onChange={(e) => updateNodeStyle(node.id, { fontSize: Number(e.target.value) })} />
-                </Field>
+                <ThemeableSizeField
+                  label="Font size"
+                  value={node.style?.fontSize}
+                  tokenType="typography"
+                  defaultValue={node.type === "heading" ? 24 : 16}
+                  onChange={(val) => updateNodeStyle(node.id, { fontSize: val })}
+                />
                 <Field label="Font weight">
                   <Select value={textValue(node.style?.fontWeight) || "400"} onChange={(e) => updateNodeStyle(node.id, { fontWeight: e.target.value })}>
                     <option value="400">Regular</option>
@@ -770,38 +928,54 @@ export function PropertyInspector() {
                   <TextInput type="number" step="0.5" value={node.style?.letterSpacing !== undefined ? String(node.style.letterSpacing) : ""} placeholder="0" onChange={(e) => updateNodeStyle(node.id, { letterSpacing: e.target.value ? Number(e.target.value) : undefined })} />
                 </Field>
               </div>
-              <Field label="Text Color">
-                <ColorField value={textValue(node.style?.color || (node.type === "button" ? node.style?.textColor : undefined)) || "#111827"} onChange={(val) => updateNodeStyle(node.id, node.type === "button" ? { textColor: val } : { color: val })} />
-              </Field>
+              <ThemeableColorField
+                label="Text Color"
+                value={node.style?.color || (node.type === "button" ? node.style?.textColor : undefined)}
+                defaultColor="#111827"
+                onChange={(val) => updateNodeStyle(node.id, node.type === "button" ? { textColor: val } : { color: val })}
+              />
             </InspectorSection>
           )}
 
           {/* Section 5: Background & Border */}
           <InspectorSection title="Background & Border">
             {node.type !== "text" && node.type !== "label" && node.type !== "heading" && node.type !== "separator" && (
-              <Field label="Background Color">
-                <ColorField value={textValue(node.style?.backgroundColor) || (node.type === "button" ? "#2563eb" : "#ffffff")} onChange={(val) => updateNodeStyle(node.id, { backgroundColor: val })} />
-              </Field>
+              <ThemeableColorField
+                label="Background Color"
+                value={node.style?.backgroundColor}
+                defaultColor={node.type === "button" ? "#2563eb" : "#ffffff"}
+                onChange={(val) => updateNodeStyle(node.id, { backgroundColor: val })}
+              />
             )}
 
             {node.type === "separator" && (
-              <Field label="Line Color">
-                <ColorField value={textValue(node.style?.color) || "#e4e4e7"} onChange={(val) => updateNodeStyle(node.id, { color: val })} />
-              </Field>
+              <ThemeableColorField
+                label="Line Color"
+                value={node.style?.color}
+                defaultColor="#e4e4e7"
+                onChange={(val) => updateNodeStyle(node.id, { color: val })}
+              />
             )}
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="Border Width">
                 <TextInput type="number" value={node.style?.borderWidth !== undefined ? String(node.style.borderWidth) : ""} placeholder="0" onChange={(e) => updateNodeStyle(node.id, { borderWidth: e.target.value ? Number(e.target.value) : undefined })} />
               </Field>
-              <Field label="Border Radius">
-                <TextInput type="number" value={node.style?.borderRadius !== undefined ? String(node.style.borderRadius) : ""} placeholder="0" onChange={(e) => updateNodeStyle(node.id, { borderRadius: e.target.value ? Number(e.target.value) : undefined })} />
-              </Field>
+              <ThemeableSizeField
+                label="Border Radius"
+                value={node.style?.borderRadius}
+                tokenType="radius"
+                defaultValue={0}
+                onChange={(val) => updateNodeStyle(node.id, { borderRadius: val })}
+              />
             </div>
 
-            <Field label="Border Color">
-              <ColorField value={textValue(node.style?.borderColor) || "#e4e4e7"} onChange={(val) => updateNodeStyle(node.id, { borderColor: val })} />
-            </Field>
+            <ThemeableColorField
+              label="Border Color"
+              value={node.style?.borderColor}
+              defaultColor="#e4e4e7"
+              onChange={(val) => updateNodeStyle(node.id, { borderColor: val })}
+            />
 
             {node.type === "separator" && (
               <Field label="Thickness (px)">

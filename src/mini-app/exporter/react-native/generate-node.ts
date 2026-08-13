@@ -10,8 +10,67 @@ type GenerateNodeOptions = {
   target?: ExportTarget;
 };
 
+let activeNode: MiniAppNode | null = null;
+
 function classNameProp(className: string) {
-  return ` className=${sourceString(className)}`;
+  const merged = activeNode ? mergeClasses(className, activeNode) : className;
+  return ` className=${sourceString(merged)}`;
+}
+
+function themeClassNames(node: MiniAppNode): string {
+  const style = node.style ?? {};
+  const classes: string[] = [];
+
+  if (style.backgroundColor && typeof style.backgroundColor === "object" && (style.backgroundColor as any).type === "theme") {
+    classes.push(`bg-${(style.backgroundColor as any).token}`);
+  }
+  if (style.color && typeof style.color === "object" && (style.color as any).type === "theme") {
+    classes.push(`text-${(style.color as any).token}`);
+  }
+  if (style.textColor && typeof style.textColor === "object" && (style.textColor as any).type === "theme") {
+    classes.push(`text-${(style.textColor as any).token}`);
+  }
+  if (style.borderColor && typeof style.borderColor === "object" && (style.borderColor as any).type === "theme") {
+    classes.push(`border border-${(style.borderColor as any).token}`);
+  }
+  if (style.borderRadius && typeof style.borderRadius === "object" && (style.borderRadius as any).type === "theme") {
+    classes.push(`rounded-${(style.borderRadius as any).token}`);
+  }
+  if (style.padding && typeof style.padding === "object" && (style.padding as any).type === "theme") {
+    classes.push(`p-${(style.padding as any).token}`);
+  }
+  if (style.margin && typeof style.margin === "object" && (style.margin as any).type === "theme") {
+    classes.push(`m-${(style.margin as any).token}`);
+  }
+  if (style.gap && typeof style.gap === "object" && (style.gap as any).type === "theme") {
+    classes.push(`gap-${(style.gap as any).token}`);
+  }
+  if (style.fontSize && typeof style.fontSize === "object" && (style.fontSize as any).type === "theme") {
+    classes.push(`text-${(style.fontSize as any).token}`);
+  }
+
+  return classes.join(" ");
+}
+
+function mergeClasses(defaultClasses: string, node: MiniAppNode): string {
+  const tClass = themeClassNames(node);
+  if (!tClass) return defaultClasses;
+
+  const defaultList = defaultClasses.split(/\s+/).filter(Boolean);
+  const themeList = tClass.split(/\s+/).filter(Boolean);
+
+  const merged = defaultList.filter((c) => {
+    if (c.startsWith("bg-") && themeList.some((tc) => tc.startsWith("bg-"))) return false;
+    if (c.startsWith("text-") && themeList.some((tc) => tc.startsWith("text-"))) return false;
+    if (c.startsWith("border-") && themeList.some((tc) => tc.startsWith("border-"))) return false;
+    if (c.startsWith("rounded-") && themeList.some((tc) => tc.startsWith("rounded-"))) return false;
+    if (c.startsWith("p-") && themeList.some((tc) => tc.startsWith("p-"))) return false;
+    if (c.startsWith("m-") && themeList.some((tc) => tc.startsWith("m-"))) return false;
+    if (c.startsWith("gap-") && themeList.some((tc) => tc.startsWith("gap-"))) return false;
+    return true;
+  });
+
+  return [...merged, ...themeList].join(" ");
 }
 
 function styleProp(node: MiniAppNode, styleNames: Map<string, string>) {
@@ -61,6 +120,16 @@ export function generateAction(
 }
 
 export function generateNode(node: MiniAppNode, options: GenerateNodeOptions): string {
+  const previousNode = activeNode;
+  activeNode = node;
+  try {
+    return generateNodeInternal(node, options);
+  } finally {
+    activeNode = previousNode;
+  }
+}
+
+function generateNodeInternal(node: MiniAppNode, options: GenerateNodeOptions): string {
   if (node.type === "container") {
     const hasManyChildren = (node.children ?? []).length >= 2;
     const isHorizontal = node.style?.direction === "horizontal";

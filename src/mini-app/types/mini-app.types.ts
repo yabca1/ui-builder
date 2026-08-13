@@ -64,12 +64,70 @@ export type ScreenDefinition = {
   nodes: MiniAppNode[];
 };
 
+export type ThemeColors = {
+  primary: string;
+  secondary: string;
+  success: string;
+  warning: string;
+  danger: string;
+  background: string;
+  surface: string;
+  card: string;
+  border: string;
+  text: string;
+  mutedText: string;
+};
+
+export type ThemeSpacing = {
+  xs: number;
+  sm: number;
+  md: number;
+  lg: number;
+  xl: number;
+  xxl: number;
+};
+
+export type ThemeRadius = {
+  sm: number;
+  md: number;
+  lg: number;
+  xl: number;
+};
+
+export type ThemeShadows = {
+  sm: Record<string, unknown>;
+  md: Record<string, unknown>;
+  lg: Record<string, unknown>;
+};
+
+export type ThemeTypography = {
+  fontFamily: string;
+  headingSize: number;
+  subheadingSize: number;
+  bodySize: number;
+  captionSize: number;
+};
+
+export type ModeTheme = {
+  colors: ThemeColors;
+  spacing: ThemeSpacing;
+  radius: ThemeRadius;
+  shadows: ThemeShadows;
+  typography: ThemeTypography;
+};
+
+export type MiniAppTheme = {
+  light: ModeTheme;
+  dark: ModeTheme;
+};
+
 export type MiniApp = {
   id: string;
   name: string;
   version: string;
   entryScreenId: string;
   screens: ScreenDefinition[];
+  theme?: MiniAppTheme;
 };
 
 export type MiniAppPackage = {

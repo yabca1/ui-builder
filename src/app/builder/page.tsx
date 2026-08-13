@@ -8,6 +8,7 @@ import { ComponentPalette } from "@/features/builder/components/ComponentPalette
 import { PropertyInspector } from "@/features/builder/components/PropertyInspector";
 import { ResizableScreenFrame } from "@/features/builder/components/ResizableScreenFrame";
 import { ScreenManager } from "@/features/builder/components/ScreenManager";
+import { ThemeManager } from "@/features/builder/components/ThemeManager";
 import { useActiveScreen, useBuilderStore } from "@/features/builder/store/builder.store";
 import { findNode, findParentAndIndex, canInsertNode } from "@/features/builder/utils/node-tree";
 import { componentRegistry } from "@/mini-app/registry/component-registry";
@@ -69,6 +70,7 @@ function DragGhost({ activeId, screenNodes }: { activeId: string | null; screenN
 
 function PreviewPanel() {
   const miniApp = useBuilderStore((state) => state.miniApp);
+  const themeMode = useBuilderStore((state) => state.themeMode);
 
   return (
     <main className="builder-grid flex min-w-0 flex-1 flex-col items-center overflow-auto p-3 sm:p-4 xl:p-6">
@@ -76,13 +78,13 @@ function PreviewPanel() {
         Preview
       </div>
       <ResizableScreenFrame className="bg-white" contentClassName="overflow-hidden">
-        <MiniAppRenderer miniApp={miniApp} />
+        <MiniAppRenderer miniApp={miniApp} themeMode={themeMode} />
       </ResizableScreenFrame>
     </main>
   );
 }
 
-type TabType = "components" | "screens" | "settings" | "help";
+type TabType = "components" | "screens" | "theme" | "settings" | "help";
 
 type ToolRailProps = {
   activeTab: TabType;
@@ -112,6 +114,15 @@ function ToolRail({ activeTab, setActiveTab }: ToolRailProps) {
           <path d="M10 6h4" />
           <path d="M10 10h4" />
           <path d="M10 14h4" />
+        </svg>
+      ),
+    },
+    {
+      id: "theme" as TabType,
+      label: "Theme",
+      icon: (
+        <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C5.02984 19.1713 5.28318 19.2604 5.5228 19.213C6.4784 19.0238 7.424 18.72 8.32 18.318C8.56391 18.2086 8.84752 18.229 9.07222 18.3719C9.99222 18.9572 10.9961 19.3872 12.054 19.6436C12.3146 19.7068 12.5 19.9388 12.5 20.2073V22" />
         </svg>
       ),
     },
@@ -367,6 +378,7 @@ function BuilderContent() {
                 <ScreenManager />
               </div>
             )}
+            {activeTab === "theme" && <ThemeManager />}
             {activeTab === "settings" && <AppSettingsPanel />}
             {activeTab === "help" && <HelpGuidePanel />}
           </div>
