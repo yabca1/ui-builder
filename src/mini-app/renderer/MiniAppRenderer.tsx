@@ -366,14 +366,12 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
   const style = node.style ?? {};
 
   if (["container", "row", "column"].includes(node.type)) {
-    let direction: "row" | "column" = "column";
-    if (node.type === "row") {
-      direction = "row";
-    } else if (node.type === "column") {
-      direction = "column";
-    } else {
-      direction = stringStyle(style.direction) === "horizontal" ? "row" : "column";
-    }
+    const direction: "row" | "column" =
+      node.type === "row"
+        ? "row"
+        : node.type === "column"
+          ? "column"
+          : stringStyle(style.direction) === "horizontal" ? "row" : "column";
 
     const hasManyChildren = (node.children ?? []).length >= 2;
 
@@ -410,9 +408,10 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
 
   if (node.type === "card") {
     const direction = stringStyle(style.direction) === "horizontal" ? "row" : "column";
+    const children = node.children ?? [];
     return (
       <div
-        className="flex flex-col border shadow-sm bg-white overflow-hidden w-full"
+        className="flex flex-col border shadow-sm overflow-hidden w-full"
         style={{
           backgroundColor: stringStyle(style.backgroundColor) ?? "#ffffff",
           borderRadius: numberStyle(style.borderRadius) ?? 12,
@@ -420,14 +419,16 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
           borderWidth: numberStyle(style.borderWidth) ?? 1,
         }}
       >
-        <div className="border-b border-zinc-100 p-4">
-          <h3 className="text-sm font-semibold tracking-tight text-zinc-900">
-            {String(node.props.title ?? "Card Title")}
-          </h3>
-          <p className="text-xs text-zinc-500 mt-1">
-            {String(node.props.description ?? "Card Description")}
-          </p>
-        </div>
+        {children.length === 0 ? (
+          <div className="border-b border-zinc-100 p-4">
+            <h3 className="text-sm font-semibold tracking-tight text-zinc-900">
+              {String(node.props.title ?? "Card Title")}
+            </h3>
+            <p className="text-xs text-zinc-500 mt-1">
+              {String(node.props.description ?? "Card Description")}
+            </p>
+          </div>
+        ) : null}
         <div
           style={{
             display: "flex",
@@ -438,7 +439,7 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
             maxWidth: "100%",
           }}
         >
-          {(node.children ?? []).map((child) => (
+          {children.map((child) => (
             <RenderNode key={child.id} node={child} runAction={runAction} />
           ))}
         </div>
@@ -536,7 +537,12 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
   }
 
   if (node.type === "image") {
-    const src = stringStyle(node.props.sourceUrl);
+    const src =
+      stringStyle(node.props.sourceUrl) ??
+      stringStyle(node.props.source) ??
+      stringStyle(node.props.src) ??
+      stringStyle(node.props.url) ??
+      stringStyle(node.props.imageUrl);
     if (!src) {
       return (
         <div
@@ -662,15 +668,21 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
 
   if (node.type === "avatar") {
     const size = numberStyle(style.size) ?? 40;
+    const src =
+      stringStyle(node.props.sourceUrl) ??
+      stringStyle(node.props.source) ??
+      stringStyle(node.props.src) ??
+      stringStyle(node.props.url) ??
+      stringStyle(node.props.imageUrl);
     return (
       <div
         className="relative flex shrink-0 overflow-hidden rounded-full bg-zinc-100"
         style={{ width: size, height: size }}
       >
-        {node.props.sourceUrl ? (
+        {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={String(node.props.sourceUrl)}
+            src={src}
             alt="avatar"
             className="aspect-square h-full w-full object-cover"
           />
@@ -900,6 +912,11 @@ export function MiniAppRenderer({ miniApp, themeMode = "light" }: MiniAppRendere
   const [currentScreenId, setCurrentScreenId] = useState(miniApp.entryScreenId);
   const [history, setHistory] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCurrentScreenId(miniApp.entryScreenId);
+    setHistory([]);
+  }, [miniApp.id, miniApp.entryScreenId]);
 
   const resolvedMiniApp = useMemo(() => {
     const theme = miniApp.theme ?? themePresets.default;

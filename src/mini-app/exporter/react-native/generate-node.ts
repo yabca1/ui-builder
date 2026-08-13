@@ -172,11 +172,14 @@ function generateNodeInternal(node: MiniAppNode, options: GenerateNodeOptions): 
     options.imports.addReactNative("View");
     options.imports.addReactNative("Text");
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    return `<View${classNameProp("border border-zinc-200 bg-white rounded-xl shadow-sm overflow-hidden")}${styleProp(node, options.styleNames)}>
-      <View${classNameProp("border-b border-zinc-100 p-4")}>
+    const header = (node.children ?? []).length > 0
+      ? ""
+      : `<View${classNameProp("border-b border-zinc-100 p-4")}>
         <Text${classNameProp("font-semibold text-zinc-900")}>{${sourceString(node.props.title)}}</Text>
         <Text${classNameProp("text-zinc-500 text-xs mt-1")}>{${sourceString(node.props.description)}}</Text>
-      </View>
+      </View>`;
+    return `<View${classNameProp("border border-zinc-200 bg-white rounded-xl shadow-sm overflow-hidden")}${styleProp(node, options.styleNames)}>
+      ${header}
       <View${classNameProp("p-4 gap-3")}>${children}</View>
     </View>`;
   }

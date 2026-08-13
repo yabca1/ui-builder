@@ -1,4 +1,5 @@
 import type { MiniAppTheme, MiniAppNode, ModeTheme } from "@/mini-app/types/mini-app.types";
+import { componentRegistry } from "@/mini-app/registry/component-registry";
 
 export const defaultSpacing = {
   xs: 4,
@@ -329,11 +330,13 @@ export function resolveNodeTheme(node: MiniAppNode, theme: MiniAppTheme, mode: "
     }
     return resolved;
   };
+  const defaultStyle = componentRegistry[node.type]?.defaultStyle ?? {};
+  const mergedStyle = { ...defaultStyle, ...(node.style ?? {}) };
 
   return {
     ...node,
     props: resolveObject(node.props) ?? {},
-    style: resolveObject(node.style),
+    style: resolveObject(mergedStyle),
     children: node.children?.map((child) => resolveNodeTheme(child, theme, mode)),
   };
 }

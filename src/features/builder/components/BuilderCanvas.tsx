@@ -126,7 +126,12 @@ function NodePreview({ node }: { node: MiniAppNode }) {
   }
 
   if (node.type === "image") {
-    const src = valueAsString(node.props.sourceUrl);
+    const src =
+      valueAsString(node.props.sourceUrl) ||
+      valueAsString(node.props.source) ||
+      valueAsString(node.props.src) ||
+      valueAsString(node.props.url) ||
+      valueAsString(node.props.imageUrl);
     if (!src) {
       return (
         <div
@@ -292,15 +297,21 @@ function NodePreview({ node }: { node: MiniAppNode }) {
 
   if (node.type === "avatar") {
     const size = valueAsNumber(style.size, 40);
+    const src =
+      valueAsString(node.props.sourceUrl) ||
+      valueAsString(node.props.source) ||
+      valueAsString(node.props.src) ||
+      valueAsString(node.props.url) ||
+      valueAsString(node.props.imageUrl);
     return (
       <div
         className="relative flex shrink-0 overflow-hidden rounded-full bg-zinc-100"
         style={{ width: size, height: size }}
       >
-        {node.props.sourceUrl ? (
+        {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={valueAsString(node.props.sourceUrl)}
+            src={src}
             alt="avatar"
             className="aspect-square h-full w-full object-cover"
           />
@@ -645,7 +656,12 @@ function SortableNode({
   const definition = componentRegistry[node.type];
   const isSelected = selectedNodeId === node.id;
   const nodeStyle = node.style ?? {};
-  const direction = valueAsString(nodeStyle.direction, "vertical") === "horizontal" ? "row" : "column";
+  const direction =
+    node.type === "row"
+      ? "row"
+      : node.type === "column"
+        ? "column"
+        : valueAsString(nodeStyle.direction, "vertical") === "horizontal" ? "row" : "column";
   const canHaveChildren = definition.canHaveChildren;
   const children = node.children ?? [];
 
@@ -764,7 +780,7 @@ function SortableNode({
             borderWidth: node.type === "card" ? valueAsNumber(nodeStyle.borderWidth, 1) : undefined,
           }}
         >
-          {node.type === "card" && (
+          {node.type === "card" && children.length === 0 && (
             <div className="border-b border-slate-100 p-4">
               <h3 className="text-sm font-semibold tracking-tight text-slate-900">
                 {valueAsString(node.props.title, "Card Title")}
