@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { ComponentType, MiniApp, MiniAppAction, MiniAppNode, MiniAppTheme } from "@/mini-app/types/mini-app.types";
+import type { ComponentType, MiniApp, MiniAppAction, MiniAppNode, MiniAppTheme, ScreenDefinition } from "@/mini-app/types/mini-app.types";
 import { canInsertNode, cloneNode, findNode, findParentAndIndex, insertNode, isDescendant, makeNode, removeNode, updateNode } from "@/features/builder/utils/node-tree";
 import { themePresets } from "@/mini-app/registry/theme-presets";
 
@@ -54,6 +54,8 @@ type BuilderState = {
   applyThemePreset: (presetName: string) => void;
   importTheme: (themeJson: string) => void;
   resetProject: () => void;
+  importProject: (miniApp: MiniApp) => void;
+  importScreen: (screen: ScreenDefinition) => void;
 };
 
 function sampleMiniApp(): MiniApp {
@@ -427,6 +429,60 @@ export const useBuilderStore = create<BuilderState>()(
           themeMode: "light",
         });
       },
+      importProject: (miniApp) =>
+        set((state) => {
+          let activeScreenId = miniApp.entryScreenId;
+          const hasEntryScreen = miniApp.screens.some((s) => s.id === activeScreenId);
+          if (!activeScreenId || !hasEntryScreen) {
+            activeScreenId = miniApp.screens[0]?.id || "";
+          }
+          return {
+            miniApp,
+            activeScreenId,
+            selectedNodeId: null,
+            activeDragId: null,
+            activeOverId: null,
+            validationErrors: [],
+          };
+        }),
+      importScreen: (screen) =>
+        set((state) => {
+          const screens = [...state.miniApp.screens];
+
+          let newId = screen.id;
+          let idCount = 1;
+          while (screens.some((s) => s.id === newId)) {
+            newId = `${screen.id}-${idCount++}`;
+          }
+
+          let newName = screen.name;
+          let nameCount = 1;
+          while (screens.some((s) => s.name.toUpperCase() === newName.toUpperCase())) {
+            newName = `${screen.name} (${nameCount++})`;
+          }
+
+          const clonedNodes = screen.nodes.map(cloneNode);
+
+          const newScreen = {
+            id: newId,
+            name: newName,
+            nodes: clonedNodes,
+          };
+
+          screens.push(newScreen);
+
+          return {
+            miniApp: {
+              ...state.miniApp,
+              screens,
+            },
+            activeScreenId: newId,
+            selectedNodeId: null,
+            activeDragId: null,
+            activeOverId: null,
+            validationErrors: [],
+          };
+        }),
     }),
     {
       name: "mini-app-builder",

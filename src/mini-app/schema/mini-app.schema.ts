@@ -41,8 +41,15 @@ export const miniAppNodeSchema: z.ZodType<{
 }> = z.lazy(() =>
   z.object({
     id: z.string().min(1),
-    type: z.enum(supportedTypes),
-    props: z.record(z.string(), z.unknown()),
+    type: z.string().superRefine((val, ctx) => {
+      if (!(val in componentRegistry)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Unsupported component type "${val}"`,
+        });
+      }
+    }) as any,
+    props: z.record(z.string(), z.unknown()).optional().default({}),
     style: z.record(z.string(), z.unknown()).optional(),
     events: z.record(z.string(), miniAppActionSchema).optional(),
     children: z.array(miniAppNodeSchema).optional(),
@@ -115,6 +122,7 @@ const miniAppThemeSchema = z.object({
 
 export const miniAppSchema = z
   .object({
+    schemaVersion: z.number().optional().default(1),
     id: z.string().min(1),
     name: z.string().min(1),
     version: z.string().min(1),
@@ -131,7 +139,7 @@ export const miniAppSchema = z
         ctx.addIssue({
           code: "custom",
           path: ["screens", screenIndex, "id"],
-          message: `Screen ID "${screen.id}" is duplicated.`,
+          message: `Duplicate screen ID "${screen.id}".`,
         });
       }
       screenIds.add(screen.id);
@@ -141,7 +149,7 @@ export const miniAppSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["entryScreenId"],
-        message: `Entry screen "${app.entryScreenId}" does not exist.`,
+        message: `Screen "${app.entryScreenId}" does not exist.`,
       });
     }
 
@@ -158,7 +166,7 @@ export const miniAppSchema = z
         ctx.addIssue({
           code: "custom",
           path: [...path, "id"],
-          message: `Node ID "${node.id}" is duplicated.`,
+          message: `Duplicate component node ID "${node.id}".`,
         });
       }
       nodeIds.add(node.id);
@@ -229,7 +237,7 @@ export const miniAppSchema = z
         });
       }
 
-      if (!definition.canHaveChildren && node.children && node.children.length > 0) {
+      if (definition && !definition.canHaveChildren && node.children && node.children.length > 0) {
         ctx.addIssue({
           code: "custom",
           path: [...path, "children"],

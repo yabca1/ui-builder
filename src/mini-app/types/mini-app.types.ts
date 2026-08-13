@@ -123,6 +123,7 @@ export type MiniAppTheme = {
 };
 
 export type MiniApp = {
+  schemaVersion?: number;
   id: string;
   name: string;
   version: string;
