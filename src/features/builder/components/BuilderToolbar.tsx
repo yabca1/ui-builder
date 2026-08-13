@@ -6,6 +6,7 @@ import { exportMiniApp } from "@/mini-app/exporter/export-mini-app";
 import { createProjectZip } from "@/mini-app/exporter/react-native/zip";
 import { useBuilderStore } from "@/features/builder/store/builder.store";
 import type { ExportTarget } from "@/mini-app/types/mini-app.types";
+import { ImportDialog } from "@/features/builder/components/ImportDialog";
 
 const screenPresets = [
   { label: "iPhone", width: 390, height: 844 },
@@ -53,6 +54,7 @@ export function BuilderToolbar() {
   const setProjectName = useBuilderStore((state) => state.setProjectName);
   const setValidationErrors = useBuilderStore((state) => state.setValidationErrors);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [exportTarget, setExportTarget] = useState<ExportTarget>("expo-mini-app");
   const [isExporting, setIsExporting] = useState(false);
   const [draftScreenSize, setDraftScreenSize] = useState({
@@ -248,6 +250,13 @@ export function BuilderToolbar() {
         </button>
         <button
           type="button"
+          onClick={() => setIsImportDialogOpen(true)}
+          className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-900/20 hover:bg-indigo-700 transition"
+        >
+          Import JSON
+        </button>
+        <button
+          type="button"
           onClick={() => setIsExportDialogOpen(true)}
           className="rounded-md bg-teal-500 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-teal-900/20 hover:bg-teal-600 transition"
         >
@@ -261,6 +270,8 @@ export function BuilderToolbar() {
           Reset
         </button>
       </div>
+
+      <ImportDialog isOpen={isImportDialogOpen} onClose={() => setIsImportDialogOpen(false)} />
 
       {isExportDialogOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
