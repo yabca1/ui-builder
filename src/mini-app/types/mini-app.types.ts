@@ -117,6 +117,7 @@ export type ModeTheme = {
 };
 
 export type MiniAppTheme = {
+  name: string;
   light: ModeTheme;
   dark: ModeTheme;
 };

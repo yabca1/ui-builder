@@ -108,6 +108,7 @@ const modeThemeSchema = z.object({
 });
 
 const miniAppThemeSchema = z.object({
+  name: z.string().min(1),
   light: modeThemeSchema,
   dark: modeThemeSchema,
 });

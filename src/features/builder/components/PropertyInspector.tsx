@@ -892,23 +892,21 @@ export function PropertyInspector() {
                   <option value="monospace">Monospace (Consolas)</option>
                 </Select>
               </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <ThemeableSizeField
-                  label="Font size"
-                  value={node.style?.fontSize}
-                  tokenType="typography"
-                  defaultValue={node.type === "heading" ? 24 : 16}
-                  onChange={(val) => updateNodeStyle(node.id, { fontSize: val })}
-                />
-                <Field label="Font weight">
-                  <Select value={textValue(node.style?.fontWeight) || "400"} onChange={(e) => updateNodeStyle(node.id, { fontWeight: e.target.value })}>
-                    <option value="400">Regular</option>
-                    <option value="500">Medium</option>
-                    <option value="600">Semi-bold</option>
-                    <option value="700">Bold</option>
-                  </Select>
-                </Field>
-              </div>
+              <ThemeableSizeField
+                label="Font size"
+                value={node.style?.fontSize}
+                tokenType="typography"
+                defaultValue={node.type === "heading" ? 24 : 16}
+                onChange={(val) => updateNodeStyle(node.id, { fontSize: val })}
+              />
+              <Field label="Font weight">
+                <Select value={textValue(node.style?.fontWeight) || "400"} onChange={(e) => updateNodeStyle(node.id, { fontWeight: e.target.value })}>
+                  <option value="400">Regular</option>
+                  <option value="500">Medium</option>
+                  <option value="600">Semi-bold</option>
+                  <option value="700">Bold</option>
+                </Select>
+              </Field>
               <Field label="Text align">
                 <SegmentedControl
                   value={textValue(node.style?.textAlign) || "left"}
@@ -957,18 +955,16 @@ export function PropertyInspector() {
               />
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Border Width">
-                <TextInput type="number" value={node.style?.borderWidth !== undefined ? String(node.style.borderWidth) : ""} placeholder="0" onChange={(e) => updateNodeStyle(node.id, { borderWidth: e.target.value ? Number(e.target.value) : undefined })} />
-              </Field>
-              <ThemeableSizeField
-                label="Border Radius"
-                value={node.style?.borderRadius}
-                tokenType="radius"
-                defaultValue={0}
-                onChange={(val) => updateNodeStyle(node.id, { borderRadius: val })}
-              />
-            </div>
+            <Field label="Border Width">
+              <TextInput type="number" value={node.style?.borderWidth !== undefined ? String(node.style.borderWidth) : ""} placeholder="0" onChange={(e) => updateNodeStyle(node.id, { borderWidth: e.target.value ? Number(e.target.value) : undefined })} />
+            </Field>
+            <ThemeableSizeField
+              label="Border Radius"
+              value={node.style?.borderRadius}
+              tokenType="radius"
+              defaultValue={0}
+              onChange={(val) => updateNodeStyle(node.id, { borderRadius: val })}
+            />
 
             <ThemeableColorField
               label="Border Color"

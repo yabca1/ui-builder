@@ -69,57 +69,53 @@ export function ThemeManager() {
   return (
     <div className="flex flex-col gap-6 h-full overflow-y-auto px-4 py-2">
       <div>
-        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Theme Presets</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {Object.keys(themePresets).map((presetName) => (
-            <button
-              key={presetName}
-              onClick={() => applyThemePreset(presetName)}
-              className={clsx(
-                "flex flex-col items-center justify-center p-3 rounded-lg border text-xs font-semibold capitalize transition hover:bg-slate-50",
-                presetName === "default" && !miniApp.theme
-                  ? "border-indigo-500 bg-indigo-50/50 text-indigo-700"
-                  : "border-slate-200 text-slate-700 bg-white"
-              )}
-            >
-              <div className="flex gap-1.5 mb-1.5">
-                <span
-                  className="w-3.5 h-3.5 rounded-full border border-black/5"
-                  style={{ backgroundColor: themePresets[presetName].light.colors.primary }}
-                />
-                <span
-                  className="w-3.5 h-3.5 rounded-full border border-black/5"
-                  style={{ backgroundColor: themePresets[presetName].light.colors.secondary }}
-                />
-                <span
-                  className="w-3.5 h-3.5 rounded-full border border-black/5"
-                  style={{ backgroundColor: themePresets[presetName].light.colors.background }}
-                />
-              </div>
-              {presetName}
-            </button>
-          ))}
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Theme Presets</h3>
+        <div className="grid grid-cols-2 gap-2.5">
+          {Object.keys(themePresets).map((presetName) => {
+            const isSelected = miniApp.theme?.name === presetName || (presetName === "default" && !miniApp.theme);
+            return (
+              <button
+                key={presetName}
+                onClick={() => applyThemePreset(presetName)}
+                className={clsx(
+                  "flex flex-col p-2.5 rounded-xl border text-left transition-all duration-200 hover:shadow-sm",
+                  isSelected
+                    ? "border-indigo-500 bg-indigo-50/20 ring-1 ring-indigo-500"
+                    : "border-slate-200 text-slate-700 bg-white hover:border-slate-300"
+                )}
+              >
+                <span className="text-xs font-bold capitalize text-slate-800 mb-2 block">{presetName}</span>
+                <div className="flex w-full h-3.5 rounded-md overflow-hidden border border-slate-100/50 shadow-inner">
+                  <div className="flex-1" style={{ backgroundColor: themePresets[presetName].light.colors.primary }} />
+                  <div className="flex-1" style={{ backgroundColor: themePresets[presetName].light.colors.secondary }} />
+                  <div className="flex-1" style={{ backgroundColor: themePresets[presetName].light.colors.success }} />
+                  <div className="flex-1" style={{ backgroundColor: themePresets[presetName].light.colors.background }} />
+                  <div className="flex-1" style={{ backgroundColor: themePresets[presetName].light.colors.surface }} />
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+      <div className="flex items-center justify-between bg-slate-50 border border-slate-100 p-3 rounded-xl">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-bold text-slate-700">Dark Mode Preview</span>
+          <span className="text-[10px] text-slate-400">View canvas in dark mode</span>
+        </div>
         <button
-          onClick={() => setThemeMode("light")}
+          onClick={() => setThemeMode(themeMode === "light" ? "dark" : "light")}
           className={clsx(
-            "flex-1 py-1.5 text-xs font-bold rounded-md transition",
-            themeMode === "light" ? "bg-white text-slate-800 shadow" : "text-slate-500 hover:text-slate-800"
+            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+            themeMode === "dark" ? "bg-indigo-600" : "bg-slate-200"
           )}
         >
-          Light Mode Preview
-        </button>
-        <button
-          onClick={() => setThemeMode("dark")}
-          className={clsx(
-            "flex-1 py-1.5 text-xs font-bold rounded-md transition",
-            themeMode === "dark" ? "bg-white text-slate-800 shadow" : "text-slate-500 hover:text-slate-800"
-          )}
-        >
-          Dark Mode Preview
+          <span
+            className={clsx(
+              "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+              themeMode === "dark" ? "translate-x-5" : "translate-x-0"
+            )}
+          />
         </button>
       </div>
 
@@ -143,28 +139,30 @@ export function ThemeManager() {
 
         <div className="flex-1 overflow-y-auto pr-1">
           {activeSection === "colors" && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {colorsList.map(({ key, label }) => {
                 const colorVal = activePresetTheme.colors[key as keyof typeof activePresetTheme.colors] || "#000000";
                 return (
-                  <div key={key} className="flex items-center justify-between gap-4 p-2 bg-slate-50 rounded-lg">
-                    <div className="flex flex-col">
+                  <div key={key} className="flex items-center justify-between gap-4 p-2.5 bg-slate-50/50 border border-slate-100 rounded-xl hover:bg-slate-50 transition duration-150">
+                    <div className="flex flex-col gap-0.5">
                       <span className="text-xs font-bold text-slate-700">{label}</span>
                       <span className="text-[10px] text-slate-400 font-mono select-all uppercase">{colorVal}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <input
                         type="text"
                         value={colorVal}
                         onChange={(e) => updateThemeColor(themeMode, key, e.target.value)}
-                        className="w-20 px-2 py-1 text-xs border border-slate-200 rounded font-mono uppercase bg-white outline-none"
+                        className="w-20 px-2 py-1.5 text-xs font-mono text-center uppercase border border-slate-200 rounded-lg bg-white outline-none shadow-sm focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                       />
-                      <input
-                        type="color"
-                        value={colorVal}
-                        onChange={(e) => updateThemeColor(themeMode, key, e.target.value)}
-                        className="w-7 h-7 rounded border border-slate-200 cursor-pointer overflow-hidden p-0"
-                      />
+                      <div className="relative flex items-center justify-center size-8 rounded-full border border-slate-200/80 shadow-sm overflow-hidden cursor-pointer shrink-0" style={{ backgroundColor: colorVal }}>
+                        <input
+                          type="color"
+                          value={colorVal}
+                          onChange={(e) => updateThemeColor(themeMode, key, e.target.value)}
+                          className="absolute inset-[-4px] size-12 cursor-pointer p-0 border-0 opacity-0"
+                        />
+                      </div>
                     </div>
                   </div>
                 );
@@ -179,7 +177,7 @@ export function ThemeManager() {
                 <select
                   value={activePresetTheme.typography.fontFamily}
                   onChange={(e) => updateThemeTypography(themeMode, "fontFamily", e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white cursor-pointer shadow-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                 >
                   <option value="sans-serif">System Sans-Serif</option>
                   <option value="serif">System Serif</option>
@@ -189,30 +187,47 @@ export function ThemeManager() {
                 </select>
               </div>
 
-              {(["headingSize", "subheadingSize", "bodySize", "captionSize"] as const).map((key) => (
-                <div key={key} className="flex items-center justify-between gap-4 p-2 bg-slate-50 rounded-lg">
-                  <span className="text-xs font-bold text-slate-700 capitalize">{key.replace("Size", " Size")}</span>
-                  <input
-                    type="number"
-                    value={activePresetTheme.typography[key]}
-                    onChange={(e) => updateThemeTypography(themeMode, key, e.target.value ? Number(e.target.value) : 0)}
-                    className="w-20 px-2 py-1 text-xs border border-slate-200 rounded bg-white outline-none"
-                  />
-                </div>
-              ))}
+              {(["headingSize", "subheadingSize", "bodySize", "captionSize"] as const).map((key) => {
+                const min = key === "headingSize" ? 12 : key === "subheadingSize" ? 12 : key === "bodySize" ? 10 : 8;
+                const max = key === "headingSize" ? 64 : key === "subheadingSize" ? 48 : key === "bodySize" ? 32 : 24;
+                const step = (key === "headingSize" || key === "subheadingSize") ? 2 : 1;
+                return (
+                  <div key={key} className="flex flex-col gap-1.5 p-3 bg-slate-50/50 border border-slate-100 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700 capitalize">{key.replace("Size", " Size")}</span>
+                      <span className="text-xs font-semibold text-slate-500">{activePresetTheme.typography[key]}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={min}
+                      max={max}
+                      step={step}
+                      value={activePresetTheme.typography[key]}
+                      onChange={(e) => updateThemeTypography(themeMode, key, Number(e.target.value))}
+                      className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
 
           {activeSection === "spacing" && (
             <div className="flex flex-col gap-4">
               {(["xs", "sm", "md", "lg", "xl", "xxl"] as const).map((key) => (
-                <div key={key} className="flex items-center justify-between gap-4 p-2 bg-slate-50 rounded-lg">
-                  <span className="text-xs font-bold text-slate-700 uppercase">Size {key}</span>
+                <div key={key} className="flex flex-col gap-1.5 p-3 bg-slate-50/50 border border-slate-100 rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700 uppercase">Size {key}</span>
+                    <span className="text-xs font-semibold text-slate-500">{activePresetTheme.spacing[key]}px</span>
+                  </div>
                   <input
-                    type="number"
+                    type="range"
+                    min="0"
+                    max="96"
+                    step="4"
                     value={activePresetTheme.spacing[key]}
-                    onChange={(e) => updateThemeSpacing(themeMode, key, e.target.value ? Number(e.target.value) : 0)}
-                    className="w-20 px-2 py-1 text-xs border border-slate-200 rounded bg-white outline-none"
+                    onChange={(e) => updateThemeSpacing(themeMode, key, Number(e.target.value))}
+                    className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                   />
                 </div>
               ))}
@@ -222,13 +237,19 @@ export function ThemeManager() {
           {activeSection === "radius" && (
             <div className="flex flex-col gap-4">
               {(["sm", "md", "lg", "xl"] as const).map((key) => (
-                <div key={key} className="flex items-center justify-between gap-4 p-2 bg-slate-50 rounded-lg">
-                  <span className="text-xs font-bold text-slate-700 uppercase">Radius {key}</span>
+                <div key={key} className="flex flex-col gap-1.5 p-3 bg-slate-50/50 border border-slate-100 rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700 uppercase">Radius {key}</span>
+                    <span className="text-xs font-semibold text-slate-500">{activePresetTheme.radius[key]}px</span>
+                  </div>
                   <input
-                    type="number"
+                    type="range"
+                    min="0"
+                    max="32"
+                    step="2"
                     value={activePresetTheme.radius[key]}
-                    onChange={(e) => updateThemeRadius(themeMode, key, e.target.value ? Number(e.target.value) : 0)}
-                    className="w-20 px-2 py-1 text-xs border border-slate-200 rounded bg-white outline-none"
+                    onChange={(e) => updateThemeRadius(themeMode, key, Number(e.target.value))}
+                    className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                   />
                 </div>
               ))}

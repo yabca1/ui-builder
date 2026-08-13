@@ -384,6 +384,7 @@ export const useBuilderStore = create<BuilderState>()(
             const parsed = JSON.parse(themeJson);
             const defaultTheme = themePresets.default;
             const mergedTheme = {
+              name: parsed.name || "custom",
               light: {
                 colors: { ...defaultTheme.light.colors, ...parsed.light?.colors },
                 spacing: { ...defaultTheme.light.spacing, ...parsed.light?.spacing },

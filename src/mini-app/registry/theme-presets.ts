@@ -32,6 +32,7 @@ export const defaultTypography = {
 
 export const themePresets: Record<string, MiniAppTheme> = {
   default: {
+    name: "default",
     light: {
       colors: {
         primary: "#3b82f6",
@@ -72,6 +73,7 @@ export const themePresets: Record<string, MiniAppTheme> = {
     },
   },
   modern: {
+    name: "modern",
     light: {
       colors: {
         primary: "#6366f1",
@@ -111,7 +113,49 @@ export const themePresets: Record<string, MiniAppTheme> = {
       typography: defaultTypography,
     },
   },
+  darkSlate: {
+    name: "darkSlate",
+    light: {
+      colors: {
+        primary: "#0f172a",
+        secondary: "#475569",
+        success: "#16a34a",
+        warning: "#ca8a04",
+        danger: "#dc2626",
+        background: "#f8fafc",
+        surface: "#f1f5f9",
+        card: "#ffffff",
+        border: "#cbd5e1",
+        text: "#0f172a",
+        mutedText: "#475569",
+      },
+      spacing: defaultSpacing,
+      radius: defaultRadius,
+      shadows: defaultShadows,
+      typography: defaultTypography,
+    },
+    dark: {
+      colors: {
+        primary: "#cbd5e1",
+        secondary: "#94a3b8",
+        success: "#4ade80",
+        warning: "#fde047",
+        danger: "#f87171",
+        background: "#020617",
+        surface: "#0f172a",
+        card: "#0f172a",
+        border: "#1e293b",
+        text: "#f8fafc",
+        mutedText: "#94a3b8",
+      },
+      spacing: defaultSpacing,
+      radius: defaultRadius,
+      shadows: defaultShadows,
+      typography: defaultTypography,
+    },
+  },
   corporate: {
+    name: "corporate",
     light: {
       colors: {
         primary: "#0f172a",
@@ -152,6 +196,7 @@ export const themePresets: Record<string, MiniAppTheme> = {
     },
   },
   fintech: {
+    name: "fintech",
     light: {
       colors: {
         primary: "#059669",
@@ -192,6 +237,7 @@ export const themePresets: Record<string, MiniAppTheme> = {
     },
   },
   dark: {
+    name: "dark",
     light: {
       colors: {
         primary: "#18181b",
