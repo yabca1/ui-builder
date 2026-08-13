@@ -1,0 +1,201 @@
+import { z } from "zod";
+import { componentRegistry } from "@/mini-app/registry/component-registry";
+
+const supportedTypes = Object.keys(componentRegistry) as [
+  keyof typeof componentRegistry,
+  ...(keyof typeof componentRegistry)[],
+];
+
+export const miniAppActionSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("navigate"),
+    screenId: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal("goBack"),
+  }),
+  z.object({
+    type: z.literal("showAlert"),
+    message: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal("setVariable"),
+    variable: z.string().min(1),
+    value: z.unknown(),
+  }),
+  z.object({
+    type: z.literal("showToast"),
+    message: z.string().min(1),
+  }),
+]);
+
+export type MiniAppActionInput = z.input<typeof miniAppActionSchema>;
+
+export const miniAppNodeSchema: z.ZodType<{
+  id: string;
+  type: (typeof supportedTypes)[number];
+  props: Record<string, unknown>;
+  style?: Record<string, unknown>;
+  events?: Record<string, MiniAppActionInput>;
+  children?: z.infer<typeof miniAppNodeSchema>[];
+}> = z.lazy(() =>
+  z.object({
+    id: z.string().min(1),
+    type: z.enum(supportedTypes),
+    props: z.record(z.string(), z.unknown()),
+    style: z.record(z.string(), z.unknown()).optional(),
+    events: z.record(z.string(), miniAppActionSchema).optional(),
+    children: z.array(miniAppNodeSchema).optional(),
+  }),
+);
+
+export const screenDefinitionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  nodes: z.array(miniAppNodeSchema),
+});
+
+export const miniAppSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    version: z.string().min(1),
+    entryScreenId: z.string().min(1),
+    screens: z.array(screenDefinitionSchema).min(1),
+  })
+  .superRefine((app, ctx) => {
+    const screenIds = new Set<string>();
+    const nodeIds = new Set<string>();
+
+    for (const [screenIndex, screen] of app.screens.entries()) {
+      if (screenIds.has(screen.id)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["screens", screenIndex, "id"],
+          message: `Screen ID "${screen.id}" is duplicated.`,
+        });
+      }
+      screenIds.add(screen.id);
+    }
+
+    if (!screenIds.has(app.entryScreenId)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["entryScreenId"],
+        message: `Entry screen "${app.entryScreenId}" does not exist.`,
+      });
+    }
+
+    const visitNode = (node: z.infer<typeof miniAppNodeSchema>, path: (string | number)[]) => {
+      if (!/^[a-zA-Z0-9_-]+$/.test(node.id)) {
+        ctx.addIssue({
+          code: "custom",
+          path: [...path, "id"],
+          message: `Node ID "${node.id}" contains unsupported characters.`,
+        });
+      }
+
+      if (nodeIds.has(node.id)) {
+        ctx.addIssue({
+          code: "custom",
+          path: [...path, "id"],
+          message: `Node ID "${node.id}" is duplicated.`,
+        });
+      }
+      nodeIds.add(node.id);
+
+      const definition = componentRegistry[node.type];
+      if (node.type === "text" && typeof node.props.text !== "string") {
+        ctx.addIssue({
+          code: "custom",
+          path: [...path, "props", "text"],
+          message: "Text nodes require a string text prop.",
+        });
+      }
+      if (node.type === "button" && typeof node.props.label !== "string") {
+        ctx.addIssue({
+          code: "custom",
+          path: [...path, "props", "label"],
+          message: "Button nodes require a string label prop.",
+        });
+      }
+      if (node.type === "input" && node.props.placeholder !== undefined && typeof node.props.placeholder !== "string") {
+        ctx.addIssue({
+          code: "custom",
+          path: [...path, "props", "placeholder"],
+          message: "Input placeholder must be a string.",
+        });
+      }
+      if (
+        node.type === "image" &&
+        typeof node.props.sourceUrl !== "string" &&
+        typeof node.props.source !== "string"
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: [...path, "props", "sourceUrl"],
+          message: "Image nodes require a sourceUrl or source string prop.",
+        });
+      }
+      if (node.type === "list" && typeof node.props.items !== "string") {
+        ctx.addIssue({
+          code: "custom",
+          path: [...path, "props", "items"],
+          message: "List items must be a string.",
+        });
+      }
+
+      const style = node.style ?? {};
+      if (style.direction !== undefined && style.direction !== "vertical" && style.direction !== "horizontal") {
+        ctx.addIssue({
+          code: "custom",
+          path: [...path, "style", "direction"],
+          message: "Direction must be vertical or horizontal.",
+        });
+      }
+      const align = style.align ?? style.alignment;
+      if (
+        align !== undefined &&
+        align !== "start" &&
+        align !== "center" &&
+        align !== "end" &&
+        align !== "stretch" &&
+        align !== "flex-start" &&
+        align !== "flex-end"
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: [...path, "style", "align"],
+          message: "Alignment uses an unsupported value.",
+        });
+      }
+
+      if (!definition.canHaveChildren && node.children && node.children.length > 0) {
+        ctx.addIssue({
+          code: "custom",
+          path: [...path, "children"],
+          message: `${definition.label} cannot contain children.`,
+        });
+      }
+
+      for (const [eventName, action] of Object.entries(node.events ?? {})) {
+        if (action.type === "navigate" && !screenIds.has(action.screenId)) {
+          ctx.addIssue({
+            code: "custom",
+            path: [...path, "events", eventName, "screenId"],
+            message: `Navigation target "${action.screenId}" does not exist.`,
+          });
+        }
+      }
+
+      node.children?.forEach((child, childIndex) => {
+        visitNode(child, [...path, "children", childIndex]);
+      });
+    };
+
+    app.screens.forEach((screen, screenIndex) => {
+      screen.nodes.forEach((node, nodeIndex) => {
+        visitNode(node, ["screens", screenIndex, "nodes", nodeIndex]);
+      });
+    });
+  });
