@@ -73,9 +73,51 @@ function mergeClasses(defaultClasses: string, node: MiniAppNode): string {
   return [...merged, ...themeList].join(" ");
 }
 
+function renderStringProp(value: unknown): string {
+  if (typeof value !== "string") return JSON.stringify(value);
+  if (value.includes("{") && value.includes("}")) {
+    const templateExpr = value.replace(/\{([^{}]+)\}/g, "${$1}");
+    return `\`${templateExpr}\``;
+  }
+  return sourceString(value);
+}
+
+function scrollViewClassProps(defaultClasses: string, node: MiniAppNode) {
+  const merged = mergeClasses(defaultClasses, node);
+  const words = merged.split(/\s+/).filter(Boolean);
+  
+  const layoutPrefixes = ["flex-", "items-", "justify-", "gap-"];
+  const layoutClasses: string[] = [];
+  const containerClasses: string[] = [];
+  
+  for (const c of words) {
+    if (layoutPrefixes.some(prefix => c.startsWith(prefix))) {
+      layoutClasses.push(c);
+    } else {
+      containerClasses.push(c);
+    }
+  }
+  
+  const classProp = containerClasses.length > 0 ? ` className=${sourceString(containerClasses.join(" "))}` : "";
+  const contentClassProp = layoutClasses.length > 0 ? ` contentContainerClassName=${sourceString(layoutClasses.join(" "))}` : "";
+  
+  return `${classProp}${contentClassProp}`;
+}
+
 function styleProp(node: MiniAppNode, styleNames: Map<string, string>) {
   const styleName = styleNames.get(node.id);
   return styleName ? ` style={styles.${styleName}}` : "";
+}
+
+function scrollViewStyleProp(
+  node: MiniAppNode,
+  styleNames: Map<string, string>,
+  imports: ImportCollector,
+) {
+  const styleName = styleNames.get(node.id);
+  if (!styleName) return "";
+  imports.addReactNative("StyleSheet");
+  return ` {...(() => { const { alignItems, justifyContent, ...style } = StyleSheet.flatten(styles.${styleName}); const hasAlign = alignItems !== undefined || justifyContent !== undefined; return { style, contentContainerStyle: { alignItems, justifyContent, ...(hasAlign ? { flexGrow: 1 } : {}) } }; })()}`;
 }
 
 function screenRouteById(screens: ScreenDefinition[], screenId: string) {
@@ -111,9 +153,29 @@ export function generateAction(
     return "() => navigation.goBack()";
   }
 
-  if (action.type === "showAlert" || action.type === "showToast") {
+  if (action.type === "showAlert") {
     imports?.addReactNative("Alert");
     return `() => Alert.alert(${sourceString(action.message)})`;
+  }
+
+  if (action.type === "showToast") {
+    imports?.addReactNative("ToastAndroid");
+    imports?.addReactNative("Platform");
+    imports?.addReactNative("Alert");
+    return `() => {
+      if (Platform.OS === 'android') {
+        ToastAndroid.show(${sourceString(action.message)}, ToastAndroid.SHORT);
+      } else {
+        Alert.alert(${sourceString(action.message)});
+      }
+    }`;
+  }
+
+  if (action.type === "setVariable") {
+    const setterName = `set${action.variable.charAt(0).toUpperCase() + action.variable.slice(1)}`;
+    const valueStr = String(action.value);
+    const code = valueStr.startsWith("=") ? valueStr.slice(1) : sourceString(valueStr);
+    return `() => ${setterName}(${code})`;
   }
 
   return "() => {}";
@@ -123,7 +185,17 @@ export function generateNode(node: MiniAppNode, options: GenerateNodeOptions): s
   const previousNode = activeNode;
   activeNode = node;
   try {
-    return generateNodeInternal(node, options);
+    let result = generateNodeInternal(node, options);
+    const action = node.events?.onPress;
+    if (node.type !== "button" && action && action.type !== "none") {
+      options.imports.addReactNative("Pressable");
+      const target = options.target ?? "react-native-cli";
+      if (action.type === "showAlert" || action.type === "showToast") {
+        options.imports.addReactNative("Alert");
+      }
+      result = `<Pressable onPress={${generateAction(action, options.screens, target, options.imports)}}>${result}</Pressable>`;
+    }
+    return result;
   } finally {
     activeNode = previousNode;
   }
@@ -133,17 +205,86 @@ function generateNodeInternal(node: MiniAppNode, options: GenerateNodeOptions): 
   if (node.type === "container") {
     const hasManyChildren = (node.children ?? []).length >= 2;
     const isHorizontal = node.style?.direction === "horizontal";
-    const useScrollView = hasManyChildren && isHorizontal;
+    const useScrollView = hasManyChildren;
     const componentName = useScrollView ? "ScrollView" : "View";
     options.imports.addReactNative(componentName);
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    const scrollProps = useScrollView ? " horizontal={true} showsHorizontalScrollIndicator={false}" : "";
-    return `<${componentName}${classNameProp("gap-3 rounded-xl")}${scrollProps}${styleProp(node, options.styleNames)}>${children}</${componentName}>`;
+    const scrollProps = useScrollView && isHorizontal ? " horizontal={true} showsHorizontalScrollIndicator={false}" : "";
+    const styleString = useScrollView
+      ? scrollViewStyleProp(node, options.styleNames, options.imports)
+      : styleProp(node, options.styleNames);
+    const classProps = useScrollView
+      ? scrollViewClassProps("gap-3 rounded-xl", node)
+      : classNameProp("gap-3 rounded-xl");
+    return `<${componentName}${classProps}${scrollProps}${styleString}>${children}</${componentName}>`;
+  }
+
+  if (node.type === "shape") {
+    options.imports.add("react-native-svg", "Svg");
+    const shapeType = node.props.shapeType as string || "rectangle";
+    const styleName = options.styleNames.get(node.id);
+    const styleString = styleName ? ` style={styles.${styleName}}` : "";
+    
+    const width = node.style?.width !== undefined ? (typeof node.style.width === "number" ? node.style.width : 100) : 100;
+    const height = node.style?.height !== undefined ? (typeof node.style.height === "number" ? node.style.height : 100) : 100;
+    const rx = node.style?.borderRadius !== undefined ? (typeof node.style.borderRadius === "number" ? node.style.borderRadius : 0) : 0;
+    
+    const bg = node.style?.backgroundColor !== undefined ? renderStringProp(node.style.backgroundColor) : `"#3b82f6"`;
+    const stroke = node.style?.borderColor !== undefined ? renderStringProp(node.style.borderColor) : `"transparent"`;
+    const strokeWidth = node.style?.borderWidth !== undefined ? (typeof node.style.borderWidth === "number" ? node.style.borderWidth : 0) : 0;
+    
+    let elementStr = "";
+    if (shapeType === "rectangle") {
+      options.imports.add("react-native-svg", "Rect");
+      elementStr = `<Rect x={${strokeWidth / 2}} y={${strokeWidth / 2}} width={${width} - ${strokeWidth}} height={${height} - ${strokeWidth}} rx={${rx}} ry={${rx}} fill={${bg}} stroke={${stroke}} strokeWidth={${strokeWidth}} />`;
+    } else if (shapeType === "ellipse") {
+      options.imports.add("react-native-svg", "Ellipse");
+      elementStr = `<Ellipse cx={${width / 2}} cy={${height / 2}} rx={(${width} - ${strokeWidth}) / 2} ry={(${height} - ${strokeWidth}) / 2} fill={${bg}} stroke={${stroke}} strokeWidth={${strokeWidth}} />`;
+    } else if (shapeType === "triangle") {
+      options.imports.add("react-native-svg", "Polygon");
+      const p1 = `${width / 2},${strokeWidth}`;
+      const p2 = `${width - strokeWidth},${height - strokeWidth}`;
+      const p3 = `${strokeWidth},${height - strokeWidth}`;
+      elementStr = `<Polygon points="${p1} ${p2} ${p3}" fill={${bg}} stroke={${stroke}} strokeWidth={${strokeWidth}} strokeLinejoin="round" />`;
+    } else if (shapeType === "star") {
+      options.imports.add("react-native-svg", "Polygon");
+      const cx = width / 2;
+      const cy = height / 2;
+      const spikes = 5;
+      const outerRadius = (Math.min(width, height) - strokeWidth) / 2;
+      const innerRadius = outerRadius * 0.4;
+      
+      let rot = (Math.PI / 2) * 3;
+      let x = cx;
+      let y = cy;
+      const step = Math.PI / spikes;
+      const points: string[] = [];
+
+      for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        points.push(`${Math.round(x)},${Math.round(y)}`);
+        rot += step;
+
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        points.push(`${Math.round(x)},${Math.round(y)}`);
+        rot += step;
+      }
+      elementStr = `<Polygon points="${points.join(" ")}" fill={${bg}} stroke={${stroke}} strokeWidth={${strokeWidth}} strokeLinejoin="round" />`;
+    } else if (shapeType === "line") {
+      options.imports.add("react-native-svg", "Line");
+      elementStr = `<Line x1={${strokeWidth}} y1={${height / 2}} x2={${width} - ${strokeWidth}} y2={${height / 2}} stroke={${bg}} strokeWidth={${strokeWidth || 2}} strokeLinecap="round" />`;
+    }
+
+    return `<Svg width={${width}} height={${height}}${styleString}>
+      ${elementStr}
+    </Svg>`;
   }
 
   if (node.type === "text") {
     options.imports.addReactNative("Text");
-    return `<Text${classNameProp("text-zinc-900")}${styleProp(node, options.styleNames)}>{${sourceString(node.props.text)}}</Text>`;
+    return `<Text${classNameProp("text-zinc-900")}${styleProp(node, options.styleNames)}>{${renderStringProp(node.props.text)}}</Text>`;
   }
 
   if (node.type === "button") {
@@ -154,7 +295,7 @@ function generateNodeInternal(node: MiniAppNode, options: GenerateNodeOptions): 
     if (action?.type === "showAlert" || action?.type === "showToast") {
       options.imports.addReactNative("Alert");
     }
-    return `<Pressable${classNameProp("items-center rounded-lg bg-blue-600 px-4 py-3")}${styleProp(node, options.styleNames)} onPress={${generateAction(action, options.screens, target, options.imports)}}><Text${classNameProp("font-semibold text-white")}>{${sourceString(node.props.label)}}</Text></Pressable>`;
+    return `<Pressable${classNameProp("items-center rounded-lg bg-blue-600 px-4 py-3")}${styleProp(node, options.styleNames)} onPress={${generateAction(action, options.screens, target, options.imports)}}><Text${classNameProp("font-semibold text-white")}>{${renderStringProp(node.props.label)}}</Text></Pressable>`;
   }
 
   if (node.type === "input") {
@@ -285,7 +426,7 @@ function generateNodeInternal(node: MiniAppNode, options: GenerateNodeOptions): 
 
   if (node.type === "label") {
     options.imports.addReactNative("Text");
-    return `<Text${classNameProp("text-sm font-semibold text-zinc-700")}${styleProp(node, options.styleNames)}>{${sourceString(node.props.text)}}</Text>`;
+    return `<Text${classNameProp("text-sm font-semibold text-zinc-700")}${styleProp(node, options.styleNames)}>{${renderStringProp(node.props.text)}}</Text>`;
   }
 
   if (node.type === "separator") {
@@ -362,7 +503,8 @@ function generateNodeInternal(node: MiniAppNode, options: GenerateNodeOptions): 
     options.imports.addReactNative("ScrollView");
     options.imports.addReactNative("View");
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    return `<ScrollView${classNameProp("w-full")}${styleProp(node, options.styleNames)}>
+    const styleString = scrollViewStyleProp(node, options.styleNames, options.imports);
+    return `<ScrollView${classNameProp("w-full")}${styleString}>
       <View${classNameProp("gap-2")}>${children}</View>
     </ScrollView>`;
   }
@@ -428,7 +570,13 @@ function generateNodeInternal(node: MiniAppNode, options: GenerateNodeOptions): 
     options.imports.addReactNative(componentName);
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
     const horizontalProp = hasManyChildren ? " horizontal={true} showsHorizontalScrollIndicator={false}" : "";
-    return `<${componentName}${classNameProp("flex-row items-center gap-2")}${horizontalProp}${styleProp(node, options.styleNames)}>
+    const styleString = hasManyChildren
+      ? scrollViewStyleProp(node, options.styleNames, options.imports)
+      : styleProp(node, options.styleNames);
+    const classProps = hasManyChildren
+      ? scrollViewClassProps("flex-row items-center gap-2", node)
+      : classNameProp("flex-row items-center gap-2");
+    return `<${componentName}${classProps}${horizontalProp}${styleString}>
 ${children}
 </${componentName}>`;
   }
@@ -438,14 +586,20 @@ ${children}
     const componentName = hasManyChildren ? "ScrollView" : "View";
     options.imports.addReactNative(componentName);
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    return `<${componentName}${classNameProp("gap-2")}${styleProp(node, options.styleNames)}>
+    const styleString = hasManyChildren
+      ? scrollViewStyleProp(node, options.styleNames, options.imports)
+      : styleProp(node, options.styleNames);
+    const classProps = hasManyChildren
+      ? scrollViewClassProps("gap-2", node)
+      : classNameProp("gap-2");
+    return `<${componentName}${classProps}${styleString}>
 ${children}
 </${componentName}>`;
   }
 
   if (node.type === "heading") {
     options.imports.addReactNative("Text");
-    return `<Text${classNameProp("font-bold text-zinc-900")}${styleProp(node, options.styleNames)}>{${sourceString(node.props.text)}}</Text>`;
+    return `<Text${classNameProp("font-bold text-zinc-900")}${styleProp(node, options.styleNames)}>{${renderStringProp(node.props.text)}}</Text>`;
   }
 
   if (node.type === "list") {

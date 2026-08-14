@@ -12,18 +12,16 @@ export type GeneratedStyles = {
 function supportedStyleEntries(style: Record<string, unknown> | undefined, node: MiniAppNode): StyleObject {
   const nodeType = node.type;
   const output: StyleObject = {};
-  if (!style) {
-    return output;
-  }
+  const actualStyle = style || {};
 
   const copyNumber = (from: string, to = from) => {
-    if (typeof style[from] === "number") {
-      output[to] = style[from];
+    if (typeof actualStyle[from] === "number") {
+      output[to] = actualStyle[from];
     }
   };
   const copyString = (from: string, to = from) => {
-    if (typeof style[from] === "string") {
-      output[to] = style[from];
+    if (typeof actualStyle[from] === "string") {
+      output[to] = actualStyle[from];
     }
   };
 
@@ -61,14 +59,14 @@ function supportedStyleEntries(style: Record<string, unknown> | undefined, node:
   copyNumber("lineHeight");
   copyNumber("letterSpacing");
 
-  const direction = style.direction;
+  const direction = actualStyle.direction;
   if (direction === "vertical") {
     output.flexDirection = "column";
   } else if (direction === "horizontal") {
     output.flexDirection = "row";
   }
 
-  const align = style.alignItems ?? style.align ?? style.alignment;
+  const align = actualStyle.alignItems ?? actualStyle.align ?? actualStyle.alignment;
   if (align === "start") {
     output.alignItems = "flex-start";
   } else if (align === "end") {
@@ -77,7 +75,7 @@ function supportedStyleEntries(style: Record<string, unknown> | undefined, node:
     output.alignItems = align;
   }
 
-  const justify = style.justifyContent ?? style.justify;
+  const justify = actualStyle.justifyContent ?? actualStyle.justify;
   if (justify === "start") {
     output.justifyContent = "flex-start";
   } else if (justify === "end") {
@@ -92,21 +90,26 @@ function supportedStyleEntries(style: Record<string, unknown> | undefined, node:
 
   copyString("flexWrap");
 
-  if (nodeType === "button" && typeof style.textColor === "string") {
-    output.color = style.textColor;
+  if (nodeType === "button" && typeof actualStyle.textColor === "string") {
+    output.color = actualStyle.textColor;
   }
 
   if (nodeType === "separator") {
-    const thickness = typeof style.thickness === "number" ? style.thickness : 1;
+    const thickness = typeof actualStyle.thickness === "number" ? actualStyle.thickness : 1;
     const isHorizontal = node.props.orientation !== "vertical";
     if (isHorizontal) {
       output.height = thickness;
     } else {
       output.width = thickness;
     }
-    if (typeof style.color === "string") {
-      output.backgroundColor = style.color;
+    if (typeof actualStyle.color === "string") {
+      output.backgroundColor = actualStyle.color;
     }
+  }
+
+  if (nodeType === "heading" && typeof actualStyle.fontSize !== "number") {
+    const level = typeof node.props.level === "number" ? node.props.level : 1;
+    output.fontSize = level === 1 ? 24 : level === 2 ? 20 : level === 3 ? 18 : 16;
   }
 
   return output;

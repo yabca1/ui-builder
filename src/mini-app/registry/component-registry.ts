@@ -119,7 +119,6 @@ export const componentRegistry: Record<ComponentType, ComponentDefinition> = {
       level: 1,
     },
     defaultStyle: {
-      fontSize: 24,
       fontWeight: "700",
       color: "#111827",
       textAlign: "left",
@@ -517,6 +516,25 @@ export const componentRegistry: Record<ComponentType, ComponentDefinition> = {
       gap: 8,
       padding: 0,
       margin: 0,
+    },
+  },
+  shape: {
+    type: "shape",
+    label: "Shape",
+    category: "media",
+    icon: "shape",
+    canHaveChildren: false,
+    defaultProps: {
+      shapeType: "rectangle",
+    },
+    defaultStyle: {
+      width: 100,
+      height: 100,
+      backgroundColor: "#3b82f6",
+      borderColor: "transparent",
+      borderWidth: 0,
+      borderRadius: 0,
+      opacity: 1,
     },
   },
 };

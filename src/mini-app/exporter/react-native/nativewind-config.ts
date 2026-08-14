@@ -50,7 +50,7 @@ export function generateTailwindConfig(kind: NativeWindProjectKind, appTheme?: M
           "./components/**/*.{js,jsx,ts,tsx}",
         ];
 
-  const themeObj = appTheme ?? themePresets.default;
+  const themeObj = (appTheme && Object.keys(appTheme).length > 0) ? appTheme : themePresets.default;
   const colors = themeObj.light.colors;
   const spacing = themeObj.light.spacing;
   const radius = themeObj.light.radius;

@@ -1,9 +1,22 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, createContext, useContext } from "react";
 import type { MiniApp, MiniAppAction, MiniAppNode } from "@/mini-app/types/mini-app.types";
 import { clsx } from "clsx";
 import { resolveNodeTheme, themePresets } from "@/mini-app/registry/theme-presets";
+
+const StateVariablesContext = createContext<Record<string, any>>({});
+
+function interpolateString(text: string, stateVariables: Record<string, any>): string {
+  if (typeof text !== "string") return "";
+  return text.replace(/\{([^{}]+)\}/g, (match, key) => {
+    const trimmedKey = key.trim();
+    if (trimmedKey in stateVariables) {
+      return String(stateVariables[trimmedKey]);
+    }
+    return match;
+  });
+}
 
 type MiniAppRendererProps = {
   miniApp: MiniApp;
@@ -362,7 +375,8 @@ function RenderPagination({ node }: { node: MiniAppNode }) {
   );
 }
 
-function RenderNode({ node, runAction }: RenderNodeProps) {
+function RenderNodeRaw({ node, runAction }: RenderNodeProps) {
+  const stateVariables = useContext(StateVariablesContext);
   const style = node.style ?? {};
 
   if (["container", "row", "column"].includes(node.type)) {
@@ -462,7 +476,7 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
           ...resolveRendererStyles(style, "text"),
         }}
       >
-        {String(node.props.text ?? "")}
+        {interpolateString(String(node.props.text ?? ""), stateVariables)}
       </div>
     );
   }
@@ -481,10 +495,11 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
       flexShrink: 0,
       ...resolveRendererStyles(style, "heading"),
     };
-    if (level === 1) return <h1 style={textStyle}>{String(node.props.text ?? "")}</h1>;
-    if (level === 2) return <h2 style={textStyle}>{String(node.props.text ?? "")}</h2>;
-    if (level === 3) return <h3 style={textStyle}>{String(node.props.text ?? "")}</h3>;
-    return <h4 style={textStyle}>{String(node.props.text ?? "")}</h4>;
+    const headingText = interpolateString(String(node.props.text ?? ""), stateVariables);
+    if (level === 1) return <h1 style={textStyle}>{headingText}</h1>;
+    if (level === 2) return <h2 style={textStyle}>{headingText}</h2>;
+    if (level === 3) return <h3 style={textStyle}>{headingText}</h3>;
+    return <h4 style={textStyle}>{headingText}</h4>;
   }
 
   if (node.type === "button") {
@@ -508,7 +523,7 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
           ...resolveRendererStyles(style, "button"),
         }}
       >
-        {String(node.props.label ?? "Button")}
+        {interpolateString(String(node.props.label ?? "Button"), stateVariables)}
       </button>
     );
   }
@@ -731,8 +746,122 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
           ...resolveRendererStyles(style, "label"),
         }}
       >
-        {String(node.props.text ?? "")}
+        {interpolateString(String(node.props.text ?? ""), stateVariables)}
       </label>
+    );
+  }
+
+  if (node.type === "shape") {
+    const shapeType = stringStyle(node.props.shapeType) ?? "rectangle";
+    const width = numberStyle(style.width) ?? 100;
+    const height = numberStyle(style.height) ?? 100;
+    const bg = stringStyle(style.backgroundColor) ?? "#3b82f6";
+    const stroke = stringStyle(style.borderColor) ?? "transparent";
+    const strokeWidth = numberStyle(style.borderWidth) ?? 0;
+    const rx = numberStyle(style.borderRadius) ?? 0;
+
+    let svgContent = null;
+    if (shapeType === "rectangle") {
+      svgContent = (
+        <rect
+          x={strokeWidth / 2}
+          y={strokeWidth / 2}
+          width={Math.max(1, width - strokeWidth)}
+          height={Math.max(1, height - strokeWidth)}
+          rx={rx}
+          ry={rx}
+          fill={bg}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+        />
+      );
+    } else if (shapeType === "ellipse") {
+      svgContent = (
+        <ellipse
+          cx={width / 2}
+          cy={height / 2}
+          rx={Math.max(1, (width - strokeWidth) / 2)}
+          ry={Math.max(1, (height - strokeWidth) / 2)}
+          fill={bg}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+        />
+      );
+    } else if (shapeType === "triangle") {
+      const p1 = `${width / 2},${strokeWidth}`;
+      const p2 = `${width - strokeWidth},${height - strokeWidth}`;
+      const p3 = `${strokeWidth},${height - strokeWidth}`;
+      svgContent = (
+        <polygon
+          points={`${p1} ${p2} ${p3}`}
+          fill={bg}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
+      );
+    } else if (shapeType === "star") {
+      const cx = width / 2;
+      const cy = height / 2;
+      const spikes = 5;
+      const outerRadius = Math.max(1, (Math.min(width, height) - strokeWidth) / 2);
+      const innerRadius = outerRadius * 0.4;
+      
+      let rot = (Math.PI / 2) * 3;
+      let x = cx;
+      let y = cy;
+      const step = Math.PI / spikes;
+      const points: string[] = [];
+
+      for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        points.push(`${x},${y}`);
+        rot += step;
+
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        points.push(`${x},${y}`);
+        rot += step;
+      }
+
+      svgContent = (
+        <polygon
+          points={points.join(" ")}
+          fill={bg}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
+      );
+    } else if (shapeType === "line") {
+      svgContent = (
+        <line
+          x1={strokeWidth}
+          y1={height / 2}
+          x2={width - strokeWidth}
+          y2={height / 2}
+          stroke={bg}
+          strokeWidth={Math.max(1, strokeWidth || 2)}
+          strokeLinecap="round"
+        />
+      );
+    }
+
+    return (
+      <svg
+        width={width}
+        height={height}
+        style={{
+          width,
+          height,
+          opacity: style.opacity !== undefined ? Number(style.opacity) : 1,
+          flexShrink: 0,
+          ...resolveRendererStyles(style, "shape"),
+        }}
+      >
+        {svgContent}
+      </svg>
     );
   }
 
@@ -908,18 +1037,57 @@ function RenderNode({ node, runAction }: RenderNodeProps) {
   return null;
 }
 
+function RenderNode(props: RenderNodeProps) {
+  const element = RenderNodeRaw(props);
+  if (!element) return null;
+
+  const { node, runAction } = props;
+  const action = node.events?.onPress;
+
+  if (node.type !== "button" && action && action.type !== "none") {
+    return (
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          runAction(action);
+        }}
+        className="cursor-pointer transition-opacity duration-150 hover:opacity-85 active:opacity-70"
+        style={{ display: "contents" }}
+      >
+        {element}
+      </div>
+    );
+  }
+
+  return element;
+}
+
 export function MiniAppRenderer({ miniApp, themeMode = "light" }: MiniAppRendererProps) {
   const [currentScreenId, setCurrentScreenId] = useState(miniApp.entryScreenId);
   const [history, setHistory] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [stateVariables, setStateVariables] = useState<Record<string, any>>({
+    display: "0",
+    operand1: null,
+    operator: null,
+    isFinished: false,
+    calcState: { display: "0", operand1: null, operator: null },
+  });
 
   useEffect(() => {
     setCurrentScreenId(miniApp.entryScreenId);
     setHistory([]);
+    setStateVariables({
+      display: "0",
+      operand1: null,
+      operator: null,
+      isFinished: false,
+      calcState: { display: "0", operand1: null, operator: null },
+    });
   }, [miniApp.id, miniApp.entryScreenId]);
 
   const resolvedMiniApp = useMemo(() => {
-    const theme = miniApp.theme ?? themePresets.default;
+    const theme = (miniApp.theme && Object.keys(miniApp.theme).length > 0) ? miniApp.theme : themePresets.default;
     return {
       ...miniApp,
       screens: miniApp.screens.map((screen) => ({
@@ -930,7 +1098,7 @@ export function MiniAppRenderer({ miniApp, themeMode = "light" }: MiniAppRendere
   }, [miniApp, themeMode]);
 
   const activeTheme = useMemo(() => {
-    const theme = miniApp.theme ?? themePresets.default;
+    const theme = (miniApp.theme && Object.keys(miniApp.theme).length > 0) ? miniApp.theme : themePresets.default;
     return theme[themeMode] ?? theme.light;
   }, [miniApp.theme, themeMode]);
 
@@ -965,31 +1133,68 @@ export function MiniAppRenderer({ miniApp, themeMode = "light" }: MiniAppRendere
     if (action.type === "showToast" || action.type === "showAlert") {
       setToast(action.message);
       window.setTimeout(() => setToast(null), 2200);
+      return;
+    }
+
+    if (action.type === "setVariable") {
+      const varName = action.variable;
+      const rawValue = action.value;
+      
+      let evaluatedValue: any;
+      if (typeof rawValue === "string" && rawValue.startsWith("=")) {
+        const expression = rawValue.slice(1);
+        try {
+          const contextKeys = Object.keys(stateVariables);
+          const contextValues = Object.values(stateVariables);
+          const fn = new Function(...contextKeys, `return (${expression});`);
+          evaluatedValue = fn(...contextValues);
+        } catch (err: any) {
+          console.error("Expression evaluation failed:", err);
+          evaluatedValue = rawValue;
+        }
+      } else {
+        evaluatedValue = rawValue;
+      }
+
+      setStateVariables((prev) => {
+        const next = {
+          ...prev,
+          [varName]: evaluatedValue,
+        };
+        console.log(`[Simulator State Change] ${varName} =`, evaluatedValue, next);
+        return next;
+      });
+
+      setToast(`State Update: ${varName} = ${evaluatedValue}`);
+      window.setTimeout(() => setToast(null), 2200);
+      return;
     }
   };
 
   return (
-    <div
-      className="relative flex h-full w-full flex-col overflow-hidden p-5 transition-colors duration-200"
-      style={{
-        backgroundColor: activeTheme.colors.background,
-        color: activeTheme.colors.text,
-      }}
-    >
+    <StateVariablesContext.Provider value={stateVariables}>
       <div
-        className="mb-4 text-xs font-semibold uppercase tracking-wide shrink-0 transition-colors"
-        style={{ color: activeTheme.colors.mutedText }}
+        className="relative flex h-full w-full flex-col overflow-hidden p-5 transition-colors duration-200"
+        style={{
+          backgroundColor: activeTheme.colors.background,
+          color: activeTheme.colors.text,
+        }}
       >
-        {screen?.name}
-      </div>
-      <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-0.5">
-        {screen?.nodes.map((node) => <RenderNode key={node.id} node={node} runAction={runAction} />)}
-      </div>
-      {toast ? (
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-zinc-900 px-4 py-2 text-sm text-white shadow-lg">
-          {toast}
+        <div
+          className="mb-4 text-xs font-semibold uppercase tracking-wide shrink-0 transition-colors"
+          style={{ color: activeTheme.colors.mutedText }}
+        >
+          {screen?.name}
         </div>
-      ) : null}
-    </div>
+        <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-0.5">
+          {screen?.nodes.map((node) => <RenderNode key={node.id} node={node} runAction={runAction} />)}
+        </div>
+        {toast ? (
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-zinc-900 px-4 py-2 text-sm text-white shadow-lg z-[9999]">
+            {toast}
+          </div>
+        ) : null}
+      </div>
+    </StateVariablesContext.Provider>
   );
 }

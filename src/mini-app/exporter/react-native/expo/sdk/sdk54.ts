@@ -17,7 +17,8 @@ export const expoSdk54 = {
     "expo-constants": "~18.0.13",
     "expo-linking": "~8.0.12",
     "expo-status-bar": "~3.0.9",
-    "nativewind": "4.1.23"
+    "nativewind": "4.1.23",
+    "react-native-svg": "15.8.0"
   },
   devDependencies: {
     "babel-preset-expo": "~54.0.7",

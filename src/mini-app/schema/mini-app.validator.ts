@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { miniAppSchema, screenDefinitionSchema } from "./mini-app.schema";
+import { miniAppSchema, screenDefinitionSchema, miniAppNodeSchema } from "./mini-app.schema";
 import type { ComponentType, MiniApp, MiniAppNode, ScreenDefinition } from "../types/mini-app.types";
 import { themePresets } from "../registry/theme-presets";
 import { componentRegistry } from "../registry/component-registry";
@@ -13,7 +13,7 @@ export type ValidationResult = {
   isValid: boolean;
   errors: ValidationError[];
   data?: any;
-  type?: "project" | "screen";
+  type?: "project" | "screen" | "components";
 };
 
 export const SUPPORTED_SCHEMA_VERSION = 1;
@@ -260,16 +260,53 @@ export function validateImportJson(rawJson: string): ValidationResult {
 
   const isProject = parsed && typeof parsed === "object" && Array.isArray(parsed.screens);
   const isScreen = parsed && typeof parsed === "object" && Array.isArray(parsed.nodes) && typeof parsed.name === "string";
+  const isComponentsArray = Array.isArray(parsed) && parsed.length > 0 && parsed.every(item => item && typeof item === "object" && typeof item.type === "string");
+  const isSingleComponent = parsed && typeof parsed === "object" && typeof parsed.type === "string" && parsed.type in componentRegistry;
 
-  if (!isProject && !isScreen) {
+  if (!isProject && !isScreen && !isComponentsArray && !isSingleComponent) {
     return {
       isValid: false,
       errors: [
         {
           path: "root",
-          message: "Root object must be a project (has 'screens' array) or a screen definition (has 'nodes' array and 'name' string).",
+          message: "Root object must be a project (has 'screens' array), a screen (has 'nodes' array and 'name' string), or one/more component definitions.",
         },
       ],
+    };
+  }
+
+  if (isComponentsArray || isSingleComponent) {
+    const nodes = isComponentsArray ? parsed : [parsed];
+    nodes.forEach(normalizeNode);
+    
+    nodes.forEach((node: any, index: number) => {
+      const schemaResult = miniAppNodeSchema.safeParse(node);
+      if (!schemaResult.success) {
+        schemaResult.error.issues.forEach((issue) => {
+          errors.push({
+            path: isComponentsArray ? `[${index}].${formatZodPath(issue.path as (string | number)[])}` : formatZodPath(issue.path as (string | number)[]),
+            message: issue.message,
+          });
+        });
+      }
+    });
+
+    const nodeIds = new Set<string>();
+    nodes.forEach((node: any, index: number) => {
+      checkNode(
+        node,
+        isComponentsArray ? `[${index}]` : "root",
+        nodeIds,
+        [],
+        errors
+      );
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      data: nodes,
+      type: "components",
     };
   }
 
@@ -370,4 +407,89 @@ export function validateImportJson(rawJson: string): ValidationResult {
       type: "screen",
     };
   }
+}
+
+export function validateProjectObject(parsed: any): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  if (!parsed || typeof parsed !== "object") {
+    return {
+      isValid: false,
+      errors: [{ path: "root", message: "Project must be an object." }],
+    };
+  }
+
+  const versionError = validateSchemaVersion(parsed);
+  if (versionError) {
+    return {
+      isValid: false,
+      errors: [versionError],
+    };
+  }
+
+  normalizeImportedData(parsed, "project");
+  const schemaResult = miniAppSchema.safeParse(parsed);
+  if (!schemaResult.success) {
+    schemaResult.error.issues.forEach((issue) => {
+      errors.push({
+        path: formatZodPath(issue.path as (string | number)[]),
+        message: issue.message,
+      });
+    });
+    return { isValid: false, errors };
+  }
+
+  const app = schemaResult.data as MiniApp;
+
+  if (app.screens.length > 0) {
+    const hasEntry = app.screens.some((s) => s.id === app.entryScreenId);
+    if (app.entryScreenId && !hasEntry) {
+      errors.push({
+        path: "entryScreenId",
+        message: `Screen "${app.entryScreenId}" does not exist.`,
+      });
+    }
+
+    const screenIds = new Set<string>();
+    const screenNames = new Set<string>();
+    app.screens.forEach((screen, index) => {
+      const path = `screens[${index}]`;
+      if (screenIds.has(screen.id)) {
+        errors.push({
+          path: `${path}.id`,
+          message: `Duplicate screen ID "${screen.id}".`,
+        });
+      }
+      screenIds.add(screen.id);
+
+      const upperName = screen.name.toUpperCase();
+      if (screenNames.has(upperName)) {
+        errors.push({
+          path: `${path}.name`,
+          message: `Duplicate screen name "${screen.name}".`,
+        });
+      }
+      screenNames.add(upperName);
+    });
+
+    const nodeIds = new Set<string>();
+    app.screens.forEach((screen, screenIndex) => {
+      screen.nodes.forEach((node, nodeIndex) => {
+        checkNode(
+          node,
+          `screens[${screenIndex}].nodes[${nodeIndex}]`,
+          nodeIds,
+          app.screens,
+          errors
+        );
+      });
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    data: app,
+    type: "project",
+  };
 }

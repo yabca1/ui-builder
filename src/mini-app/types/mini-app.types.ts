@@ -25,7 +25,8 @@ export type ComponentType =
   | "row"
   | "column"
   | "heading"
-  | "list";
+  | "list"
+  | "shape";
 
 export type MiniAppAction =
   | {

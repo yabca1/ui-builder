@@ -125,10 +125,19 @@ export const miniAppSchema = z
     schemaVersion: z.number().optional().default(1),
     id: z.string().min(1),
     name: z.string().min(1),
-    version: z.string().min(1),
-    entryScreenId: z.string().min(1),
-    screens: z.array(screenDefinitionSchema).min(1),
-    theme: miniAppThemeSchema.optional(),
+    version: z.string().optional().default("1.0.0"),
+    entryScreenId: z.string().optional().default(""),
+    screens: z.array(screenDefinitionSchema),
+    theme: z.preprocess(
+      (val) => {
+        if (val && typeof val === "object" && Object.keys(val).length === 0) {
+          return undefined;
+        }
+        return val;
+      },
+      miniAppThemeSchema.optional()
+    ),
+    ownerId: z.any().nullable().optional().default(null),
   })
   .superRefine((app, ctx) => {
     const screenIds = new Set<string>();
@@ -145,12 +154,14 @@ export const miniAppSchema = z
       screenIds.add(screen.id);
     }
 
-    if (!screenIds.has(app.entryScreenId)) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["entryScreenId"],
-        message: `Screen "${app.entryScreenId}" does not exist.`,
-      });
+    if (app.screens.length > 0) {
+      if (!app.entryScreenId || !screenIds.has(app.entryScreenId)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["entryScreenId"],
+          message: `Screen "${app.entryScreenId || ""}" does not exist.`,
+        });
+      }
     }
 
     const visitNode = (node: z.infer<typeof miniAppNodeSchema>, path: (string | number)[]) => {

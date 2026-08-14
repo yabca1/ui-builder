@@ -211,7 +211,7 @@ function nativeWindFiles(target: "expo-mini-app" | "expo-standalone", theme?: Mi
 }
 
 function generateThemeFile(appTheme?: MiniAppTheme): string {
-  const theme = appTheme ?? themePresets.default;
+  const theme = (appTheme && Object.keys(appTheme).length > 0) ? appTheme : themePresets.default;
   return `import { createContext, useContext, useState } from "react";
 
 export const themePresets = ${JSON.stringify(theme, null, 2)};
@@ -477,7 +477,8 @@ AppRegistry.registerComponent(appName, () => App);
               "@react-navigation/native": "^6.1.9",
               "@react-navigation/native-stack": "^6.9.17",
               "react-native-safe-area-context": "^4.7.4",
-              "react-native-screens": "^3.27.0"
+              "react-native-screens": "^3.27.0",
+              "react-native-svg": "^15.8.0"
             },
             devDependencies: {
               "@babel/core": "^7.20.0",

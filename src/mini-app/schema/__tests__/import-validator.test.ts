@@ -510,4 +510,43 @@ describe("JSON Import & Validation Pipeline Tests", () => {
     expect(res.data.theme.light.colors.primary).toBe("#3b82f6");
     expect(res.data.theme.dark.colors.primary).toBe("#3b82f6");
   });
+
+  test("should successfully validate individual component JSON definitions", () => {
+    const singleComponent = {
+      type: "button",
+      props: {
+        label: "Imported Button",
+      },
+      style: {
+        backgroundColor: "#10b981",
+      },
+    };
+
+    const res = validateImportJson(JSON.stringify(singleComponent));
+    expect(res.isValid).toBe(true);
+    expect(res.type).toBe("components");
+    expect(res.data).toHaveLength(1);
+    expect(res.data[0].type).toBe("button");
+    expect(res.data[0].props.label).toBe("Imported Button");
+  });
+
+  test("should successfully validate array of component JSON definitions", () => {
+    const componentArray = [
+      {
+        type: "heading",
+        props: { text: "Imported Heading" },
+      },
+      {
+        type: "text",
+        props: { text: "Imported Body text" },
+      },
+    ];
+
+    const res = validateImportJson(JSON.stringify(componentArray));
+    expect(res.isValid).toBe(true);
+    expect(res.type).toBe("components");
+    expect(res.data).toHaveLength(2);
+    expect(res.data[0].type).toBe("heading");
+    expect(res.data[1].type).toBe("text");
+  });
 });
