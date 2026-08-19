@@ -1,0 +1,390 @@
+{
+  "schemaVersion": 1,
+  "id": "api-ninjas-quotes-demo",
+  "name": "API Ninjas Quotes Demo",
+  "version": "1.0.0",
+  "entryScreenId": "home",
+  "theme": {
+    "name": "dark-green",
+    "light": {
+      "colors": {
+        "primary": "#22c55e",
+        "secondary": "#06b6d4",
+        "success": "#10b981",
+        "warning": "#f59e0b",
+        "danger": "#ef4444",
+        "background": "#0f172a",
+        "surface": "#111827",
+        "card": "#1e293b",
+        "border": "#334155",
+        "text": "#f8fafc",
+        "mutedText": "#cbd5e1"
+      },
+      "spacing": {
+        "xs": 4,
+        "sm": 8,
+        "md": 16,
+        "lg": 24,
+        "xl": 32,
+        "xxl": 48
+      },
+      "radius": {
+        "sm": 4,
+        "md": 8,
+        "lg": 12,
+        "xl": 20
+      },
+      "shadows": {
+        "sm": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 1
+          },
+          "shadowOpacity": 0.15,
+          "shadowRadius": 2,
+          "elevation": 1
+        },
+        "md": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 3
+          },
+          "shadowOpacity": 0.2,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "lg": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 6
+          },
+          "shadowOpacity": 0.25,
+          "shadowRadius": 8,
+          "elevation": 6
+        }
+      },
+      "typography": {
+        "fontFamily": "sans-serif",
+        "headingSize": 24,
+        "subheadingSize": 18,
+        "bodySize": 14,
+        "captionSize": 12
+      }
+    },
+    "dark": {
+      "colors": {
+        "primary": "#86efac",
+        "secondary": "#67e8f9",
+        "success": "#34d399",
+        "warning": "#fbbf24",
+        "danger": "#f87171",
+        "background": "#020617",
+        "surface": "#0f172a",
+        "card": "#111827",
+        "border": "#1e293b",
+        "text": "#ffffff",
+        "mutedText": "#94a3b8"
+      },
+      "spacing": {
+        "xs": 4,
+        "sm": 8,
+        "md": 16,
+        "lg": 24,
+        "xl": 32,
+        "xxl": 48
+      },
+      "radius": {
+        "sm": 4,
+        "md": 8,
+        "lg": 12,
+        "xl": 20
+      },
+      "shadows": {
+        "sm": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 1
+          },
+          "shadowOpacity": 0.15,
+          "shadowRadius": 2,
+          "elevation": 1
+        },
+        "md": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 3
+          },
+          "shadowOpacity": 0.2,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "lg": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 6
+          },
+          "shadowOpacity": 0.25,
+          "shadowRadius": 8,
+          "elevation": 6
+        }
+      },
+      "typography": {
+        "fontFamily": "sans-serif",
+        "headingSize": 24,
+        "subheadingSize": 18,
+        "bodySize": 14,
+        "captionSize": 12
+      }
+    }
+  },
+  "credentials": [
+    {
+      "id": "api-ninjas-key",
+      "name": "API Ninjas Key",
+      "value": "GovzwmRJbALpEvIy4tltfO6qUFcmIphh3BaDpYov"
+    }
+  ],
+  "integrations": [
+    {
+      "id": "api-ninjas",
+      "name": "API Ninjas",
+      "baseUrl": "https://api.api-ninjas.com",
+      "authConfig": {
+        "type": "apiKey",
+        "credentialId": "api-ninjas-key",
+        "headerName": "X-Api-Key"
+      },
+      "loggingLevel": "basic"
+    }
+  ],
+  "apiPaths": [
+    {
+      "id": "quotes",
+      "name": "Quotes",
+      "integrationId": "api-ninjas",
+      "path": "/v2/quotes",
+      "method": "GET",
+      "requestSchema": [
+        {
+          "name": "categories",
+          "type": "string",
+          "required": false,
+          "defaultValue": "success,wisdom"
+        },
+        {
+          "name": "exclude_categories",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "author",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "work",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "responseSchema": [
+        {
+          "name": "0.quote",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "0.author",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "0.work",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "0.categories",
+          "type": "array",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "screens": [
+    {
+      "id": "home",
+      "name": "Home",
+      "nodes": [
+        {
+          "id": "root",
+          "type": "column",
+          "props": {},
+          "style": {
+            "padding": 16,
+            "gap": {
+              "type": "theme",
+              "token": "md"
+            },
+            "backgroundColor": {
+              "type": "theme",
+              "token": "background"
+            }
+          },
+          "children": [
+            {
+              "id": "heading",
+              "type": "heading",
+              "props": {
+                "text": "API Ninjas Quotes",
+                "level": 1
+              },
+              "style": {
+                "color": {
+                  "type": "theme",
+                  "token": "text"
+                }
+              }
+            },
+            {
+              "id": "intro",
+              "type": "text",
+              "props": {
+                "text": "Tap the button to fetch a quote from API Ninjas."
+              },
+              "style": {
+                "color": {
+                  "type": "theme",
+                  "token": "mutedText"
+                }
+              }
+            },
+            {
+              "id": "quote-card",
+              "type": "card",
+              "props": {
+                "title": "Quote",
+                "description": "API response"
+              },
+              "style": {
+                "backgroundColor": {
+                  "type": "theme",
+                  "token": "card"
+                },
+                "borderColor": {
+                  "type": "theme",
+                  "token": "border"
+                },
+                "gap": 12
+              },
+              "children": [
+                {
+                  "id": "quote-text",
+                  "type": "text",
+                  "props": {
+                    "text": "{quote}"
+                  },
+                  "style": {
+                    "fontSize": 18,
+                    "fontWeight": "600",
+                    "color": {
+                      "type": "theme",
+                      "token": "text"
+                    }
+                  }
+                },
+                {
+                  "id": "author-text",
+                  "type": "text",
+                  "props": {
+                    "text": "— {author}"
+                  },
+                  "style": {
+                    "color": {
+                      "type": "theme",
+                      "token": "secondary"
+                    }
+                  }
+                },
+                {
+                  "id": "categories-text",
+                  "type": "text",
+                  "props": {
+                    "text": "Categories: {categories}"
+                  },
+                  "style": {
+                    "fontSize": 12,
+                    "color": {
+                      "type": "theme",
+                      "token": "mutedText"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "fetch-quote-button",
+              "type": "button",
+              "props": {
+                "label": "Fetch Quote"
+              },
+              "style": {
+                "backgroundColor": {
+                  "type": "theme",
+                  "token": "primary"
+                },
+                "textColor": "#052e16"
+              },
+              "events": {
+                "onPress": {
+                  "type": "invokeApi",
+                  "integrationId": "api-ninjas",
+                  "pathId": "quotes",
+                  "requestMappings": [
+                    {
+                      "parameter": "categories",
+                      "sourceType": "static",
+                      "sourceValue": "success,wisdom"
+                    }
+                  ],
+                  "responseMappings": [
+                    {
+                      "responsePath": "0.quote",
+                      "targetVariable": "quote"
+                    },
+                    {
+                      "responsePath": "0.author",
+                      "targetVariable": "author"
+                    },
+                    {
+                      "responsePath": "0.categories",
+                      "targetVariable": "categories"
+                    }
+                  ],
+                  "onLoading": {
+                    "type": "showToast",
+                    "message": "Fetching quote..."
+                  },
+                  "onLoaded": {
+                    "type": "showToast",
+                    "message": "Quote loaded"
+                  },
+                  "onError": {
+                    "type": "showToast",
+                    "message": "Quote request failed"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

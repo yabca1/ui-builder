@@ -1,0 +1,69 @@
+{
+  "integration": {
+    "id": "api-ninjas",
+    "name": "API Ninjas",
+    "baseUrl": "https://api.api-ninjas.com",
+    "authConfig": {
+      "type": "apiKey",
+      "credentialId": "api-ninjas-key",
+      "headerName": "X-Api-Key"
+    },
+    "loggingLevel": "basic"
+  },
+  "path": {
+    "id": "quotes",
+    "name": "Quotes",
+    "integrationId": "api-ninjas",
+    "path": "/v2/quotes",
+    "method": "GET",
+    "requestSchema": [
+      {
+        "name": "categories",
+        "type": "string",
+        "required": false,
+        "defaultValue": "success,wisdom"
+      },
+      {
+        "name": "exclude_categories",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "author",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "work",
+        "type": "string",
+        "required": false
+      }
+    ],
+    "responseSchema": [
+      {
+        "name": "0.quote",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "0.author",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "0.work",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "0.categories",
+        "type": "array",
+        "required": true
+      }
+    ]
+  },
+  "params": {
+    "categories": "success,wisdom"
+  },
+  "credentialValue": "GovzwmRJbALpEvIy4tltfO6qUFcmIphh3BaDpYov"
+}
