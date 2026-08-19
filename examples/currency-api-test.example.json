@@ -1,0 +1,51 @@
+{
+  "integration": {
+    "id": "exchange-rate-api",
+    "name": "Exchange Rate API",
+    "baseUrl": "https://v6.exchangerate-api.com",
+    "authConfig": {
+      "type": "none"
+    },
+    "loggingLevel": "basic"
+  },
+  "path": {
+    "id": "latest-rates",
+    "name": "Latest Rates",
+    "integrationId": "exchange-rate-api",
+    "path": "/v6/:apiKey/latest/:baseCurrency",
+    "method": "GET",
+    "requestSchema": [
+      {
+        "name": "apiKey",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "baseCurrency",
+        "type": "string",
+        "required": true
+      }
+    ],
+    "responseSchema": [
+      {
+        "name": "result",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "conversion_rates.USD",
+        "type": "number",
+        "required": true
+      },
+      {
+        "name": "conversion_rates.EUR",
+        "type": "number",
+        "required": true
+      }
+    ]
+  },
+  "params": {
+    "apiKey": "YOUR_API_KEY_HERE",
+    "baseCurrency": "USD"
+  }
+}
