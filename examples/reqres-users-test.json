@@ -1,0 +1,98 @@
+{
+  "integration": {
+    "id": "reqres",
+    "name": "ReqRes Classic API",
+    "baseUrl": "https://reqres.in",
+    "authConfig": {
+      "type": "apiKey",
+      "credentialId": "reqres-api-key",
+      "headerName": "x-api-key"
+    },
+    "loggingLevel": "basic"
+  },
+  "path": {
+    "id": "list-users",
+    "name": "List Users",
+    "integrationId": "reqres",
+    "path": "/api/users",
+    "method": "GET",
+    "requestSchema": [
+      {
+        "name": "page",
+        "type": "number",
+        "required": false,
+        "defaultValue": 1,
+        "validationRules": {
+          "minimum": 1
+        }
+      },
+      {
+        "name": "per_page",
+        "type": "number",
+        "required": false,
+        "defaultValue": 6,
+        "validationRules": {
+          "minimum": 1,
+          "maximum": 12
+        }
+      }
+    ],
+    "responseSchema": [
+      {
+        "name": "page",
+        "type": "number",
+        "required": true
+      },
+      {
+        "name": "per_page",
+        "type": "number",
+        "required": true
+      },
+      {
+        "name": "total",
+        "type": "number",
+        "required": true
+      },
+      {
+        "name": "total_pages",
+        "type": "number",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "array",
+        "required": true
+      },
+      {
+        "name": "data.0.id",
+        "type": "number",
+        "required": true
+      },
+      {
+        "name": "data.0.email",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "data.0.first_name",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "data.0.last_name",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "data.0.avatar",
+        "type": "string",
+        "required": true
+      }
+    ]
+  },
+  "params": {
+    "page": 1,
+    "per_page": 6
+  },
+  "credentialValue": "free_user_3I7tPhUdxOMDsRgljOtsD4ZlVfu"
+}
