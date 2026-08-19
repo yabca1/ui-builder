@@ -1,0 +1,457 @@
+{
+  "schemaVersion": 1,
+  "id": "botoi-base64-demo",
+  "name": "Botoi Base64 Demo",
+  "version": "1.0.0",
+  "entryScreenId": "home",
+  "theme": {
+    "name": "dark-green",
+    "light": {
+      "colors": {
+        "primary": "#22c55e",
+        "secondary": "#06b6d4",
+        "success": "#10b981",
+        "warning": "#f59e0b",
+        "danger": "#ef4444",
+        "background": "#0f172a",
+        "surface": "#111827",
+        "card": "#1e293b",
+        "border": "#334155",
+        "text": "#f8fafc",
+        "mutedText": "#cbd5e1"
+      },
+      "spacing": {
+        "xs": 4,
+        "sm": 8,
+        "md": 16,
+        "lg": 24,
+        "xl": 32,
+        "xxl": 48
+      },
+      "radius": {
+        "sm": 4,
+        "md": 8,
+        "lg": 12,
+        "xl": 20
+      },
+      "shadows": {
+        "sm": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 1
+          },
+          "shadowOpacity": 0.15,
+          "shadowRadius": 2,
+          "elevation": 1
+        },
+        "md": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 3
+          },
+          "shadowOpacity": 0.2,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "lg": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 6
+          },
+          "shadowOpacity": 0.25,
+          "shadowRadius": 8,
+          "elevation": 6
+        }
+      },
+      "typography": {
+        "fontFamily": "sans-serif",
+        "headingSize": 24,
+        "subheadingSize": 18,
+        "bodySize": 14,
+        "captionSize": 12
+      }
+    },
+    "dark": {
+      "colors": {
+        "primary": "#86efac",
+        "secondary": "#67e8f9",
+        "success": "#34d399",
+        "warning": "#fbbf24",
+        "danger": "#f87171",
+        "background": "#020617",
+        "surface": "#0f172a",
+        "card": "#111827",
+        "border": "#1e293b",
+        "text": "#ffffff",
+        "mutedText": "#94a3b8"
+      },
+      "spacing": {
+        "xs": 4,
+        "sm": 8,
+        "md": 16,
+        "lg": 24,
+        "xl": 32,
+        "xxl": 48
+      },
+      "radius": {
+        "sm": 4,
+        "md": 8,
+        "lg": 12,
+        "xl": 20
+      },
+      "shadows": {
+        "sm": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 1
+          },
+          "shadowOpacity": 0.15,
+          "shadowRadius": 2,
+          "elevation": 1
+        },
+        "md": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 3
+          },
+          "shadowOpacity": 0.2,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "lg": {
+          "shadowColor": "#000000",
+          "shadowOffset": {
+            "width": 0,
+            "height": 6
+          },
+          "shadowOpacity": 0.25,
+          "shadowRadius": 8,
+          "elevation": 6
+        }
+      },
+      "typography": {
+        "fontFamily": "sans-serif",
+        "headingSize": 24,
+        "subheadingSize": 18,
+        "bodySize": 14,
+        "captionSize": 12
+      }
+    }
+  },
+  "credentials": [
+    {
+      "id": "botoi-api-key",
+      "name": "Botoi API Key",
+      "value": "botoi_Wuc4Wb9ytiXpnPrSiHRTz7"
+    }
+  ],
+  "integrations": [
+    {
+      "id": "botoi",
+      "name": "Botoi API",
+      "baseUrl": "https://api.botoi.com",
+      "authConfig": {
+        "type": "apiKey",
+        "credentialId": "botoi-api-key",
+        "headerName": "X-API-Key"
+      },
+      "loggingLevel": "basic"
+    }
+  ],
+  "apiPaths": [
+    {
+      "id": "base64-encode",
+      "name": "Base64 Encode",
+      "integrationId": "botoi",
+      "path": "/v1/base64/encode",
+      "method": "POST",
+      "requestSchema": [
+        {
+          "name": "text",
+          "type": "string",
+          "required": true,
+          "defaultValue": "Hello, World!"
+        },
+        {
+          "name": "urlSafe",
+          "type": "boolean",
+          "required": false,
+          "defaultValue": false
+        }
+      ],
+      "responseSchema": [
+        {
+          "name": "success",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "data.encoded",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "meta.requestId",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "meta.duration",
+          "type": "number",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "screens": [
+    {
+      "id": "home",
+      "name": "Home",
+      "nodes": [
+        {
+          "id": "root",
+          "type": "column",
+          "props": {},
+          "style": {
+            "padding": 16,
+            "gap": {
+              "type": "theme",
+              "token": "md"
+            },
+            "backgroundColor": {
+              "type": "theme",
+              "token": "background"
+            }
+          },
+          "children": [
+            {
+              "id": "heading",
+              "type": "heading",
+              "props": {
+                "text": "Botoi Base64 Encoder",
+                "level": 1
+              },
+              "style": {
+                "color": {
+                  "type": "theme",
+                  "token": "text"
+                }
+              }
+            },
+            {
+              "id": "intro",
+              "type": "text",
+              "props": {
+                "text": "Tap the button to encode text through Botoi."
+              },
+              "style": {
+                "color": {
+                  "type": "theme",
+                  "token": "mutedText"
+                }
+              }
+            },
+            {
+              "id": "input-card",
+              "type": "card",
+              "props": {
+                "title": "Request",
+                "description": "Type text to encode"
+              },
+              "style": {
+                "backgroundColor": {
+                  "type": "theme",
+                  "token": "card"
+                },
+                "borderColor": {
+                  "type": "theme",
+                  "token": "border"
+                },
+                "gap": 12
+              },
+              "children": [
+                {
+                  "id": "text-input",
+                  "type": "input",
+                  "props": {
+                    "placeholder": "Text to encode",
+                    "defaultValue": "Hello, World!",
+                    "variableName": "inputText"
+                  },
+                  "style": {
+                    "backgroundColor": "#111827",
+                    "textColor": "#f8fafc",
+                    "borderColor": {
+                      "type": "theme",
+                      "token": "secondary"
+                    },
+                    "borderWidth": 1,
+                    "borderRadius": 10,
+                    "padding": 12
+                  }
+                },
+                {
+                  "id": "url-safe-label",
+                  "type": "text",
+                  "props": {
+                    "text": "URL-safe encoding: false"
+                  },
+                  "style": {
+                    "fontSize": 12,
+                    "color": {
+                      "type": "theme",
+                      "token": "mutedText"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "result-card",
+              "type": "card",
+              "props": {
+                "title": "Result",
+                "description": "Botoi response"
+              },
+              "style": {
+                "backgroundColor": {
+                  "type": "theme",
+                  "token": "card"
+                },
+                "borderColor": {
+                  "type": "theme",
+                  "token": "border"
+                },
+                "gap": 12
+              },
+              "children": [
+                {
+                  "id": "encoded-heading",
+                  "type": "text",
+                  "props": {
+                    "text": "Encoded value"
+                  },
+                  "style": {
+                    "fontSize": 12,
+                    "fontWeight": "700",
+                    "color": {
+                      "type": "theme",
+                      "token": "secondary"
+                    }
+                  }
+                },
+                {
+                  "id": "encoded-output",
+                  "type": "text",
+                  "props": {
+                    "text": "{encoded}"
+                  },
+                  "style": {
+                    "fontSize": 18,
+                    "fontWeight": "700",
+                    "color": {
+                      "type": "theme",
+                      "token": "text"
+                    }
+                  }
+                },
+                {
+                  "id": "request-id-output",
+                  "type": "text",
+                  "props": {
+                    "text": "Request: {requestId}"
+                  },
+                  "style": {
+                    "fontSize": 12,
+                    "color": {
+                      "type": "theme",
+                      "token": "mutedText"
+                    }
+                  }
+                },
+                {
+                  "id": "duration-output",
+                  "type": "text",
+                  "props": {
+                    "text": "Duration: {duration}ms"
+                  },
+                  "style": {
+                    "fontSize": 12,
+                    "color": {
+                      "type": "theme",
+                      "token": "mutedText"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "encode-button",
+              "type": "button",
+              "props": {
+                "label": "Encode Text"
+              },
+              "style": {
+                "backgroundColor": {
+                  "type": "theme",
+                  "token": "primary"
+                },
+                "textColor": "#052e16"
+              },
+              "events": {
+                "onPress": {
+                  "type": "invokeApi",
+                  "integrationId": "botoi",
+                  "pathId": "base64-encode",
+                  "requestMappings": [
+                    {
+                      "parameter": "text",
+                      "sourceType": "variable",
+                      "sourceValue": "inputText"
+                    },
+                    {
+                      "parameter": "urlSafe",
+                      "sourceType": "static",
+                      "sourceValue": "false"
+                    }
+                  ],
+                  "responseMappings": [
+                    {
+                      "responsePath": "data.encoded",
+                      "targetVariable": "encoded"
+                    },
+                    {
+                      "responsePath": "meta.requestId",
+                      "targetVariable": "requestId"
+                    },
+                    {
+                      "responsePath": "meta.duration",
+                      "targetVariable": "duration"
+                    }
+                  ],
+                  "onLoading": {
+                    "type": "showToast",
+                    "message": "Encoding text..."
+                  },
+                  "onLoaded": {
+                    "type": "showToast",
+                    "message": "Text encoded"
+                  },
+                  "onError": {
+                    "type": "showToast",
+                    "message": "Encode request failed"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

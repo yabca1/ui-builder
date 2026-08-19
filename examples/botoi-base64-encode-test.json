@@ -1,0 +1,61 @@
+{
+  "integration": {
+    "id": "botoi",
+    "name": "Botoi API",
+    "baseUrl": "https://api.botoi.com",
+    "authConfig": {
+      "type": "apiKey",
+      "credentialId": "botoi-api-key",
+      "headerName": "X-API-Key"
+    },
+    "loggingLevel": "basic"
+  },
+  "path": {
+    "id": "base64-encode",
+    "name": "Base64 Encode",
+    "integrationId": "botoi",
+    "path": "/v1/base64/encode",
+    "method": "POST",
+    "requestSchema": [
+      {
+        "name": "text",
+        "type": "string",
+        "required": true,
+        "defaultValue": "Hello, World!"
+      },
+      {
+        "name": "urlSafe",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": false
+      }
+    ],
+    "responseSchema": [
+      {
+        "name": "success",
+        "type": "boolean",
+        "required": true
+      },
+      {
+        "name": "data.encoded",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "meta.requestId",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "meta.duration",
+        "type": "number",
+        "required": true
+      }
+    ]
+  },
+  "params": {
+    "text": "Hello, World!",
+    "urlSafe": false
+  },
+  "credentialValue": "botoi_Wuc4Wb9ytiXpnPrSiHRTz7"
+}
