@@ -1,0 +1,70 @@
+{
+  "integration": {
+    "id": "abstract-email-reputation",
+    "name": "Abstract Email Reputation API",
+    "baseUrl": "https://emailreputation.abstractapi.com",
+    "authConfig": {
+      "type": "none"
+    },
+    "loggingLevel": "basic"
+  },
+  "path": {
+    "id": "check-email-reputation",
+    "name": "Check Email Reputation",
+    "integrationId": "abstract-email-reputation",
+    "path": "/v1",
+    "method": "GET",
+    "requestSchema": [
+      {
+        "name": "api_key",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "required": true,
+        "defaultValue": "benjamin.richard@abstractapi.com",
+        "validationRules": {
+          "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+        }
+      }
+    ],
+    "responseSchema": [
+      {
+        "name": "email_address",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "suggested_correction",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "email_deliverability.status",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "email_deliverability.status_detail",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "email_deliverability.is_format_valid",
+        "type": "boolean",
+        "required": true
+      },
+      {
+        "name": "email_deliverability.is_smtp_valid",
+        "type": "boolean",
+        "required": true
+      }
+    ]
+  },
+  "params": {
+    "api_key": "3d9a237d85eb43ed869b207978dd477e",
+    "email": "benjamin.richard@abstractapi.com"
+  }
+}
