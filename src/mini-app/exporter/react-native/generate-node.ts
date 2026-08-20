@@ -1,76 +1,200 @@
 import type { MiniAppAction, MiniAppNode, ScreenDefinition, ExportTarget } from "@/mini-app/types/mini-app.types";
 import { ImportCollector } from "@/mini-app/exporter/react-native/imports";
-import { routeName, slugify } from "@/mini-app/exporter/react-native/identifiers";
-import { propString, sourceString, imageSourcePropValue } from "@/mini-app/exporter/react-native/strings";
+import { routeName } from "@/mini-app/exporter/react-native/identifiers";
+import { sourceString, imageSourcePropValue } from "@/mini-app/exporter/react-native/strings";
 
 type GenerateNodeOptions = {
   imports: ImportCollector;
-  styleNames: Map<string, string>;
   screens: ScreenDefinition[];
   target?: ExportTarget;
+  styleNames?: Map<string, string>;
 };
 
-let activeNode: MiniAppNode | null = null;
-
-function classNameProp(className: string) {
-  const merged = activeNode ? mergeClasses(className, activeNode) : className;
-  return ` className=${sourceString(merged)}`;
+function getTailwindPropertyCategory(cls: string): string {
+  if (cls.startsWith("bg-")) return "bg";
+  if (cls.startsWith("text-")) return "text";
+  if (cls.startsWith("border-") || cls === "border") return "border";
+  if (cls.startsWith("rounded-") || cls.startsWith("rounded")) return "rounded";
+  if (cls.startsWith("p-") || cls.startsWith("pt-") || cls.startsWith("pr-") || cls.startsWith("pb-") || cls.startsWith("pl-") || cls.startsWith("px-") || cls.startsWith("py-")) return "padding";
+  if (cls.startsWith("m-") || cls.startsWith("mt-") || cls.startsWith("mr-") || cls.startsWith("mb-") || cls.startsWith("ml-") || cls.startsWith("mx-") || cls.startsWith("my-")) return "margin";
+  if (cls.startsWith("w-") || cls.startsWith("min-w-") || cls.startsWith("max-w-")) return "width";
+  if (cls.startsWith("h-") || cls.startsWith("min-h-") || cls.startsWith("max-h-")) return "height";
+  if (cls.startsWith("gap-")) return "gap";
+  if (cls.startsWith("flex-") || cls.startsWith("flex")) return "flex";
+  if (cls.startsWith("items-")) return "items";
+  if (cls.startsWith("justify-")) return "justify";
+  if (cls.startsWith("font-")) return "font";
+  if (cls.startsWith("leading-")) return "leading";
+  if (cls.startsWith("tracking-")) return "tracking";
+  if (cls.startsWith("opacity-")) return "opacity";
+  return cls;
 }
 
-function themeClassNames(node: MiniAppNode): string {
-  const style = node.style ?? {};
+function mergeTailwindClasses(defaultClasses: string, customClasses: string): string {
+  if (!customClasses) return defaultClasses;
+  if (!defaultClasses) return customClasses;
+
+  const defaultList = defaultClasses.split(/\s+/).filter(Boolean);
+  const customList = customClasses.split(/\s+/).filter(Boolean);
+
+  const customCategories = new Set(customList.map(getTailwindPropertyCategory));
+
+  const filteredDefaults = defaultList.filter(
+    (cls) => !customCategories.has(getTailwindPropertyCategory(cls))
+  );
+
+  return [...filteredDefaults, ...customList].join(" ");
+}
+
+function styleToTailwind(style: Record<string, any> | undefined, node: MiniAppNode): string {
+  if (!style) return "";
   const classes: string[] = [];
 
-  if (style.backgroundColor && typeof style.backgroundColor === "object" && (style.backgroundColor as any).type === "theme") {
-    classes.push(`bg-${(style.backgroundColor as any).token}`);
+  const getVal = (prop: string) => {
+    const val = style[prop];
+    if (val === undefined || val === null) return null;
+    if (typeof val === "object" && val.type === "theme") {
+      return { isToken: true, value: val.token };
+    }
+    return { isToken: false, value: val };
+  };
+
+  const bg = getVal("backgroundColor");
+  if (bg) {
+    if (bg.isToken) classes.push(`bg-${bg.value}`);
+    else classes.push(`bg-[${bg.value}]`);
   }
-  if (style.color && typeof style.color === "object" && (style.color as any).type === "theme") {
-    classes.push(`text-${(style.color as any).token}`);
+
+  const color = getVal("color") ?? getVal("textColor");
+  if (color) {
+    if (color.isToken) classes.push(`text-${color.value}`);
+    else classes.push(`text-[${color.value}]`);
   }
-  if (style.textColor && typeof style.textColor === "object" && (style.textColor as any).type === "theme") {
-    classes.push(`text-${(style.textColor as any).token}`);
+
+  const borderColor = getVal("borderColor");
+  if (borderColor) {
+    if (borderColor.isToken) classes.push(`border-${borderColor.value}`);
+    else classes.push(`border-[${borderColor.value}]`);
   }
-  if (style.borderColor && typeof style.borderColor === "object" && (style.borderColor as any).type === "theme") {
-    classes.push(`border border-${(style.borderColor as any).token}`);
+
+  const borderWidth = getVal("borderWidth");
+  if (borderWidth) {
+    classes.push(`border-[${borderWidth.value}px]`);
   }
-  if (style.borderRadius && typeof style.borderRadius === "object" && (style.borderRadius as any).type === "theme") {
-    classes.push(`rounded-${(style.borderRadius as any).token}`);
+
+  const borderRadius = getVal("borderRadius");
+  if (borderRadius) {
+    if (borderRadius.isToken) classes.push(`rounded-${borderRadius.value}`);
+    else classes.push(`rounded-[${borderRadius.value}px]`);
   }
-  if (style.padding && typeof style.padding === "object" && (style.padding as any).type === "theme") {
-    classes.push(`p-${(style.padding as any).token}`);
+
+  const width = getVal("width");
+  if (width) {
+    if (typeof width.value === "number") classes.push(`w-[${width.value}px]`);
+    else classes.push(`w-[${width.value}]`);
   }
-  if (style.margin && typeof style.margin === "object" && (style.margin as any).type === "theme") {
-    classes.push(`m-${(style.margin as any).token}`);
+
+  const height = getVal("height");
+  if (height) {
+    if (typeof height.value === "number") classes.push(`h-[${height.value}px]`);
+    else classes.push(`h-[${height.value}]`);
   }
-  if (style.gap && typeof style.gap === "object" && (style.gap as any).type === "theme") {
-    classes.push(`gap-${(style.gap as any).token}`);
+
+  const minWidth = getVal("minWidth");
+  if (minWidth) classes.push(`min-w-[${minWidth.value}${typeof minWidth.value === "number" ? "px" : ""}]`);
+  const maxWidth = getVal("maxWidth");
+  if (maxWidth) classes.push(`max-w-[${maxWidth.value}${typeof maxWidth.value === "number" ? "px" : ""}]`);
+  const minHeight = getVal("minHeight");
+  if (minHeight) classes.push(`min-h-[${minHeight.value}${typeof minHeight.value === "number" ? "px" : ""}]`);
+  const maxHeight = getVal("maxHeight");
+  if (maxHeight) classes.push(`max-h-[${maxHeight.value}${typeof maxHeight.value === "number" ? "px" : ""}]`);
+
+  const padding = getVal("padding");
+  if (padding) {
+    if (padding.isToken) classes.push(`p-${padding.value}`);
+    else classes.push(`p-[${padding.value}px]`);
   }
-  if (style.fontSize && typeof style.fontSize === "object" && (style.fontSize as any).type === "theme") {
-    classes.push(`text-${(style.fontSize as any).token}`);
+  const pt = getVal("paddingTop"); if (pt) classes.push(pt.isToken ? `pt-${pt.value}` : `pt-[${pt.value}px]`);
+  const pr = getVal("paddingRight"); if (pr) classes.push(pr.isToken ? `pr-${pr.value}` : `pr-[${pr.value}px]`);
+  const pb = getVal("paddingBottom"); if (pb) classes.push(pb.isToken ? `pb-${pb.value}` : `pb-[${pb.value}px]`);
+  const pl = getVal("paddingLeft"); if (pl) classes.push(pl.isToken ? `pl-${pl.value}` : `pl-[${pl.value}px]`);
+  const px = getVal("paddingHorizontal"); if (px) classes.push(px.isToken ? `px-${px.value}` : `px-[${px.value}px]`);
+  const py = getVal("paddingVertical"); if (py) classes.push(py.isToken ? `py-${py.value}` : `py-[${py.value}px]`);
+
+  const margin = getVal("margin");
+  if (margin) {
+    if (margin.isToken) classes.push(`m-${margin.value}`);
+    else classes.push(`m-[${margin.value}px]`);
+  }
+  const mt = getVal("marginTop"); if (mt) classes.push(mt.isToken ? `mt-${mt.value}` : `mt-[${mt.value}px]`);
+  const mr = getVal("marginRight"); if (mr) classes.push(mr.isToken ? `mr-${mr.value}` : `mr-[${mr.value}px]`);
+  const mb = getVal("marginBottom"); if (mb) classes.push(mb.isToken ? `mb-${mb.value}` : `mb-[${mb.value}px]`);
+  const ml = getVal("marginLeft"); if (ml) classes.push(ml.isToken ? `ml-${ml.value}` : `ml-[${ml.value}px]`);
+  const mx = getVal("marginHorizontal"); if (mx) classes.push(mx.isToken ? `mx-${mx.value}` : `mx-[${mx.value}px]`);
+  const my = getVal("marginVertical"); if (my) classes.push(my.isToken ? `my-${my.value}` : `my-[${my.value}px]`);
+
+  const gap = getVal("gap");
+  if (gap) {
+    if (gap.isToken) classes.push(`gap-${gap.value}`);
+    else classes.push(`gap-[${gap.value}px]`);
+  }
+
+  const flex = getVal("flex");
+  if (flex) {
+    classes.push(`flex-[${flex.value}]`);
+  }
+
+  const direction = style.direction;
+  if (direction === "vertical" || direction === "column") {
+    classes.push("flex-col");
+  } else if (direction === "horizontal" || direction === "row") {
+    classes.push("flex-row");
+  }
+
+  const flexWrap = style.flexWrap;
+  if (flexWrap === "wrap") classes.push("flex-wrap");
+  else if (flexWrap === "nowrap") classes.push("flex-nowrap");
+
+  const align = style.alignItems ?? style.align ?? style.alignment;
+  if (align === "start" || align === "flex-start") classes.push("items-start");
+  else if (align === "end" || align === "flex-end") classes.push("items-end");
+  else if (align === "center") classes.push("items-center");
+  else if (align === "stretch") classes.push("items-stretch");
+
+  const justify = style.justifyContent ?? style.justify;
+  if (justify === "start" || justify === "flex-start") classes.push("justify-start");
+  else if (justify === "end" || justify === "flex-end") classes.push("justify-end");
+  else if (justify === "center") classes.push("justify-center");
+  else if (justify === "space-between") classes.push("justify-between");
+  else if (justify === "space-around") classes.push("justify-around");
+
+  const fontSize = getVal("fontSize");
+  if (fontSize) {
+    if (fontSize.isToken) classes.push(`text-${fontSize.value}`);
+    else classes.push(`text-[${fontSize.value}px]`);
+  }
+
+  const fontWeight = getVal("fontWeight");
+  if (fontWeight) {
+    classes.push(`font-[${fontWeight.value}]`);
+  }
+
+  const opacity = getVal("opacity");
+  if (opacity) {
+    classes.push(`opacity-[${opacity.value}]`);
+  }
+
+  const lineHeight = getVal("lineHeight");
+  if (lineHeight) {
+    classes.push(`leading-[${lineHeight.value}px]`);
+  }
+
+  const letterSpacing = getVal("letterSpacing");
+  if (letterSpacing) {
+    classes.push(`tracking-[${letterSpacing.value}px]`);
   }
 
   return classes.join(" ");
-}
-
-function mergeClasses(defaultClasses: string, node: MiniAppNode): string {
-  const tClass = themeClassNames(node);
-  if (!tClass) return defaultClasses;
-
-  const defaultList = defaultClasses.split(/\s+/).filter(Boolean);
-  const themeList = tClass.split(/\s+/).filter(Boolean);
-
-  const merged = defaultList.filter((c) => {
-    if (c.startsWith("bg-") && themeList.some((tc) => tc.startsWith("bg-"))) return false;
-    if (c.startsWith("text-") && themeList.some((tc) => tc.startsWith("text-"))) return false;
-    if (c.startsWith("border-") && themeList.some((tc) => tc.startsWith("border-"))) return false;
-    if (c.startsWith("rounded-") && themeList.some((tc) => tc.startsWith("rounded-"))) return false;
-    if (c.startsWith("p-") && themeList.some((tc) => tc.startsWith("p-"))) return false;
-    if (c.startsWith("m-") && themeList.some((tc) => tc.startsWith("m-"))) return false;
-    if (c.startsWith("gap-") && themeList.some((tc) => tc.startsWith("gap-"))) return false;
-    return true;
-  });
-
-  return [...merged, ...themeList].join(" ");
 }
 
 function renderStringProp(value: unknown): string {
@@ -82,47 +206,43 @@ function renderStringProp(value: unknown): string {
   return sourceString(value);
 }
 
-function scrollViewClassProps(defaultClasses: string, node: MiniAppNode) {
-  const merged = mergeClasses(defaultClasses, node);
-  const words = merged.split(/\s+/).filter(Boolean);
-  
-  const layoutPrefixes = ["flex-", "items-", "justify-", "gap-"];
-  const layoutClasses: string[] = [];
-  const containerClasses: string[] = [];
-  
-  for (const c of words) {
-    if (layoutPrefixes.some(prefix => c.startsWith(prefix))) {
-      layoutClasses.push(c);
-    } else {
-      containerClasses.push(c);
-    }
+export function stateRoot(path: string): string {
+  return String(path || "").split(".").filter(Boolean)[0] || "value";
+}
+
+export function stateIdentifier(path: string): string {
+  const root = stateRoot(path);
+  return root.replace(/[^a-zA-Z0-9_$]/g, "_").replace(/^(\d)/, "_$1");
+}
+
+export function stateSetterName(path: string): string {
+  const id = stateIdentifier(path);
+  return `set${id.charAt(0).toUpperCase()}${id.slice(1)}`;
+}
+
+function relativePath(path: string): string {
+  const parts = String(path || "").split(".").filter(Boolean);
+  return parts.slice(1).join(".");
+}
+
+function expressionForStatePath(path: string): string {
+  const id = stateIdentifier(path);
+  const nestedPath = relativePath(path);
+  return nestedPath ? `getValueByPath(${id}, ${sourceString(nestedPath)})` : id;
+}
+
+function setterForStatePath(path: string, valueExpression: string): string {
+  const id = stateIdentifier(path);
+  const setter = stateSetterName(path);
+  const nestedPath = relativePath(path);
+  if (!nestedPath) {
+    return `${setter}(${valueExpression});`;
   }
-  
-  const classProp = containerClasses.length > 0 ? ` className=${sourceString(containerClasses.join(" "))}` : "";
-  const contentClassProp = layoutClasses.length > 0 ? ` contentContainerClassName=${sourceString(layoutClasses.join(" "))}` : "";
-  
-  return `${classProp}${contentClassProp}`;
-}
-
-function styleProp(node: MiniAppNode, styleNames: Map<string, string>) {
-  const styleName = styleNames.get(node.id);
-  return styleName ? ` style={styles.${styleName}}` : "";
-}
-
-function scrollViewStyleProp(
-  node: MiniAppNode,
-  styleNames: Map<string, string>,
-  imports: ImportCollector,
-) {
-  const styleName = styleNames.get(node.id);
-  if (!styleName) return "";
-  imports.addReactNative("StyleSheet");
-  return ` {...(() => { const { alignItems, justifyContent, ...style } = StyleSheet.flatten(styles.${styleName}); const hasAlign = alignItems !== undefined || justifyContent !== undefined; return { style, contentContainerStyle: { alignItems, justifyContent, ...(hasAlign ? { flexGrow: 1 } : {}) } }; })()}`;
-}
-
-function screenRouteById(screens: ScreenDefinition[], screenId: string) {
-  const screen = screens.find((candidate) => candidate.id === screenId);
-  return screen ? routeName(screen.name) : "";
+  return `${setter}((prev: any) => {
+        const next = structuredClone(prev ?? {});
+        setValueByPath(next, ${sourceString(nestedPath)}, ${valueExpression});
+        return next;
+      });`;
 }
 
 export function generateAction(
@@ -136,20 +256,12 @@ export function generateAction(
   }
 
   if (action.type === "navigate") {
-    if (target === "expo-standalone") {
-      imports?.add("expo-router", "router");
-      const screen = screens.find((candidate) => candidate.id === action.screenId);
-      const slug = screen ? slugify(screen.name) : "";
-      return `() => router.push(${sourceString(slug === "home" || slug === "index" ? "/" : `/${slug}`)})`;
-    }
-    return `() => navigation.navigate(${sourceString(screenRouteById(screens, action.screenId))})`;
+    const screen = screens.find((candidate) => candidate.id === action.screenId);
+    const screenRoute = screen ? routeName(screen.name) : "";
+    return `() => navigation.navigate(${sourceString(screenRoute)})`;
   }
 
   if (action.type === "goBack") {
-    if (target === "expo-standalone") {
-      imports?.add("expo-router", "router");
-      return "() => router.back()";
-    }
     return "() => navigation.goBack()";
   }
 
@@ -172,475 +284,344 @@ export function generateAction(
   }
 
   if (action.type === "setVariable") {
-    const setterName = `set${action.variable.charAt(0).toUpperCase() + action.variable.slice(1)}`;
+    imports?.add("../../infrastructure/api/api-client", "setValueByPath");
     const valueStr = String(action.value);
     const code = valueStr.startsWith("=") ? valueStr.slice(1) : sourceString(valueStr);
-    return `() => ${setterName}(${code})`;
+    return `() => {
+      ${setterForStatePath(action.variable, code)}
+    }`;
+  }
+
+  if (action.type === "invokeApi") {
+    imports?.add("../../infrastructure/api/api-client", "getValueByPath");
+    imports?.add("../../infrastructure/api/api-client", "invokeApi");
+    imports?.add("../../infrastructure/api/api-client", "setValueByPath");
+    if (action.requestMappings.some((mapping) => mapping.sourceType === "credential")) {
+      imports?.add("../../infrastructure/api/api-client", "credentialsResolver");
+    }
+
+    const paramLines = action.requestMappings.map((m) => {
+      if (m.sourceType === "static") {
+        return `setValueByPath(params, ${sourceString(m.parameter)}, ${sourceString(m.sourceValue)});`;
+      } else if (m.sourceType === "credential") {
+        return `setValueByPath(params, ${sourceString(m.parameter)}, credentialsResolver.get(${sourceString(m.sourceValue)}));`;
+      }
+      return `setValueByPath(params, ${sourceString(m.parameter)}, ${expressionForStatePath(m.sourceValue)} ?? "");`;
+    }).join("\n      ");
+
+    const responseUpdates = action.responseMappings.map((m) => {
+      return setterForStatePath(m.targetVariable, `getValueByPath(result.data, ${sourceString(m.responsePath)}) ?? null`);
+    }).join("\n          ");
+
+    const onLoadingCode = action.onLoading ? `(${generateAction(action.onLoading, screens, target, imports)})();` : "";
+    const onLoadedCode = action.onLoaded ? `(${generateAction(action.onLoaded, screens, target, imports)})();` : "";
+    const onEmptyCode = action.onEmpty ? `(${generateAction(action.onEmpty, screens, target, imports)})();` : "";
+    const onErrorCode = action.onError ? `(${generateAction(action.onError, screens, target, imports)})();` : "";
+
+    return `() => {
+      ${setterForStatePath(`api.${action.pathId}.status`, sourceString("loading"))}
+      ${setterForStatePath(`api.${action.pathId}.error`, "null")}
+      ${setterForStatePath(`api.${action.pathId}.statusCode`, "null")}
+      ${onLoadingCode}
+      const params: Record<string, any> = {};
+      ${paramLines}
+      invokeApi(
+        ${JSON.stringify(action.integrationId)},
+        ${JSON.stringify(action.pathId)},
+        params
+      ).then((result) => {
+        if (result.success) {
+          ${responseUpdates}
+          const isEmpty = !result.data ||
+            (Array.isArray(result.data) && result.data.length === 0) ||
+            (typeof result.data === 'object' && Object.keys(result.data).length === 0);
+          if (isEmpty) {
+            ${setterForStatePath(`api.${action.pathId}.status`, sourceString("empty"))}
+            ${setterForStatePath(`api.${action.pathId}.statusCode`, "result.status ?? null")}
+            ${onEmptyCode ? onEmptyCode : onLoadedCode}
+          } else {
+            ${setterForStatePath(`api.${action.pathId}.status`, sourceString("loaded"))}
+            ${setterForStatePath(`api.${action.pathId}.statusCode`, "result.status ?? null")}
+            ${onLoadedCode}
+          }
+        } else {
+          ${setterForStatePath(`api.${action.pathId}.status`, sourceString("error"))}
+          ${setterForStatePath(`api.${action.pathId}.error`, "result.error ?? 'API request failed'")}
+          ${setterForStatePath(`api.${action.pathId}.statusCode`, "result.status ?? null")}
+          ${onErrorCode}
+        }
+      }).catch((err) => {
+        console.error(err);
+        ${setterForStatePath(`api.${action.pathId}.status`, sourceString("error"))}
+        ${setterForStatePath(`api.${action.pathId}.error`, "err?.message ?? 'API request failed'")}
+        ${onErrorCode}
+      });
+    }`;
   }
 
   return "() => {}";
 }
 
 export function generateNode(node: MiniAppNode, options: GenerateNodeOptions): string {
-  const previousNode = activeNode;
-  activeNode = node;
-  try {
-    let result = generateNodeInternal(node, options);
-    const action = node.events?.onPress;
-    if (node.type !== "button" && action && action.type !== "none") {
-      options.imports.addReactNative("Pressable");
-      const target = options.target ?? "react-native-cli";
-      if (action.type === "showAlert" || action.type === "showToast") {
-        options.imports.addReactNative("Alert");
-      }
-      result = `<Pressable onPress={${generateAction(action, options.screens, target, options.imports)}}>${result}</Pressable>`;
-    }
-    return result;
-  } finally {
-    activeNode = previousNode;
+  let result = generateNodeInternal(node, options);
+  const action = node.events?.onPress;
+  if (node.type !== "button" && action) {
+    options.imports.addReactNative("Pressable");
+    const target = options.target ?? "react-native-cli";
+    result = `<Pressable onPress={${generateAction(action, options.screens, target, options.imports)}}>${result}</Pressable>`;
   }
+  return result;
 }
 
 function generateNodeInternal(node: MiniAppNode, options: GenerateNodeOptions): string {
+  const customClasses = options.styleNames?.get(node.id) || styleToTailwind(node.style, node);
+
   if (node.type === "container") {
     const hasManyChildren = (node.children ?? []).length >= 2;
     const isHorizontal = node.style?.direction === "horizontal";
     const useScrollView = hasManyChildren;
-    const componentName = useScrollView ? "ScrollView" : "View";
-    options.imports.addReactNative(componentName);
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    const scrollProps = useScrollView && isHorizontal ? " horizontal={true} showsHorizontalScrollIndicator={false}" : "";
-    const styleString = useScrollView
-      ? scrollViewStyleProp(node, options.styleNames, options.imports)
-      : styleProp(node, options.styleNames);
-    const classProps = useScrollView
-      ? scrollViewClassProps("gap-3 rounded-xl", node)
-      : classNameProp("gap-3 rounded-xl");
-    return `<${componentName}${classProps}${scrollProps}${styleString}>${children}</${componentName}>`;
+    const mergedClasses = mergeTailwindClasses("gap-3 rounded-xl", customClasses);
+
+    if (useScrollView) {
+      options.imports.addReactNative("ScrollView");
+      const scrollProps = isHorizontal ? ' horizontal={true} showsHorizontalScrollIndicator={false}' : '';
+      const words = mergedClasses.split(/\s+/).filter(Boolean);
+      const layoutPrefixes = ["flex-", "items-", "justify-", "gap-", "flex-row", "flex-col"];
+      const layoutClasses: string[] = [];
+      const containerClasses: string[] = [];
+      for (const c of words) {
+        if (layoutPrefixes.some(prefix => c.startsWith(prefix))) {
+          layoutClasses.push(c);
+        } else {
+          containerClasses.push(c);
+        }
+      }
+      const classProp = containerClasses.length > 0 ? ` className="${containerClasses.join(" ")}"` : "";
+      const contentClassProp = layoutClasses.length > 0 ? ` contentContainerClassName="${layoutClasses.join(" ")}"` : "";
+      return `<ScrollView${classProp}${contentClassProp}${scrollProps}>${children}</ScrollView>`;
+    } else {
+      options.imports.addReactNative("View");
+      return `<View className="${mergedClasses}">${children}</View>`;
+    }
   }
 
   if (node.type === "shape") {
-    options.imports.add("react-native-svg", "Svg");
+    options.imports.addUiComponent("Shape");
     const shapeType = node.props.shapeType as string || "rectangle";
-    const styleName = options.styleNames.get(node.id);
-    const styleString = styleName ? ` style={styles.${styleName}}` : "";
-    
     const width = node.style?.width !== undefined ? (typeof node.style.width === "number" ? node.style.width : 100) : 100;
     const height = node.style?.height !== undefined ? (typeof node.style.height === "number" ? node.style.height : 100) : 100;
     const rx = node.style?.borderRadius !== undefined ? (typeof node.style.borderRadius === "number" ? node.style.borderRadius : 0) : 0;
-    
     const bg = node.style?.backgroundColor !== undefined ? renderStringProp(node.style.backgroundColor) : `"#3b82f6"`;
     const stroke = node.style?.borderColor !== undefined ? renderStringProp(node.style.borderColor) : `"transparent"`;
     const strokeWidth = node.style?.borderWidth !== undefined ? (typeof node.style.borderWidth === "number" ? node.style.borderWidth : 0) : 0;
     
-    let elementStr = "";
-    if (shapeType === "rectangle") {
-      options.imports.add("react-native-svg", "Rect");
-      elementStr = `<Rect x={${strokeWidth / 2}} y={${strokeWidth / 2}} width={${width} - ${strokeWidth}} height={${height} - ${strokeWidth}} rx={${rx}} ry={${rx}} fill={${bg}} stroke={${stroke}} strokeWidth={${strokeWidth}} />`;
-    } else if (shapeType === "ellipse") {
-      options.imports.add("react-native-svg", "Ellipse");
-      elementStr = `<Ellipse cx={${width / 2}} cy={${height / 2}} rx={(${width} - ${strokeWidth}) / 2} ry={(${height} - ${strokeWidth}) / 2} fill={${bg}} stroke={${stroke}} strokeWidth={${strokeWidth}} />`;
-    } else if (shapeType === "triangle") {
-      options.imports.add("react-native-svg", "Polygon");
-      const p1 = `${width / 2},${strokeWidth}`;
-      const p2 = `${width - strokeWidth},${height - strokeWidth}`;
-      const p3 = `${strokeWidth},${height - strokeWidth}`;
-      elementStr = `<Polygon points="${p1} ${p2} ${p3}" fill={${bg}} stroke={${stroke}} strokeWidth={${strokeWidth}} strokeLinejoin="round" />`;
-    } else if (shapeType === "star") {
-      options.imports.add("react-native-svg", "Polygon");
-      const cx = width / 2;
-      const cy = height / 2;
-      const spikes = 5;
-      const outerRadius = (Math.min(width, height) - strokeWidth) / 2;
-      const innerRadius = outerRadius * 0.4;
-      
-      let rot = (Math.PI / 2) * 3;
-      let x = cx;
-      let y = cy;
-      const step = Math.PI / spikes;
-      const points: string[] = [];
+    const shapeClasses = customClasses.split(/\s+/).filter(cls => {
+      return !cls.startsWith("w-") && !cls.startsWith("h-") && !cls.startsWith("bg-") && !cls.startsWith("border-") && !cls.startsWith("rounded-");
+    }).join(" ");
 
-      for (let i = 0; i < spikes; i++) {
-        x = cx + Math.cos(rot) * outerRadius;
-        y = cy + Math.sin(rot) * outerRadius;
-        points.push(`${Math.round(x)},${Math.round(y)}`);
-        rot += step;
+    const classProp = shapeClasses ? ` className="${shapeClasses}"` : "";
 
-        x = cx + Math.cos(rot) * innerRadius;
-        y = cy + Math.sin(rot) * innerRadius;
-        points.push(`${Math.round(x)},${Math.round(y)}`);
-        rot += step;
-      }
-      elementStr = `<Polygon points="${points.join(" ")}" fill={${bg}} stroke={${stroke}} strokeWidth={${strokeWidth}} strokeLinejoin="round" />`;
-    } else if (shapeType === "line") {
-      options.imports.add("react-native-svg", "Line");
-      elementStr = `<Line x1={${strokeWidth}} y1={${height / 2}} x2={${width} - ${strokeWidth}} y2={${height / 2}} stroke={${bg}} strokeWidth={${strokeWidth || 2}} strokeLinecap="round" />`;
-    }
-
-    return `<Svg width={${width}} height={${height}}${styleString}>
-      ${elementStr}
-    </Svg>`;
+    return `<Shape shapeType="${shapeType}" width={${width}} height={${height}} rx={${rx}} fill={${bg}} stroke={${stroke}} strokeWidth={${strokeWidth}}${classProp} />`;
   }
 
   if (node.type === "text") {
-    options.imports.addReactNative("Text");
-    return `<Text${classNameProp("text-zinc-900")}${styleProp(node, options.styleNames)}>{${renderStringProp(node.props.text)}}</Text>`;
+    options.imports.addUiComponent("Text");
+    const mergedClasses = mergeTailwindClasses("text-zinc-900", customClasses);
+    return `<Text className="${mergedClasses}" text={${renderStringProp(node.props.text)}} />`;
   }
 
   if (node.type === "button") {
-    options.imports.addReactNative("Pressable");
-    options.imports.addReactNative("Text");
+    options.imports.addUiComponent("Button");
+    const mergedClasses = mergeTailwindClasses("items-center rounded-lg bg-blue-600 px-4 py-3", customClasses);
     const action = node.events?.onPress;
     const target = options.target ?? "react-native-cli";
-    if (action?.type === "showAlert" || action?.type === "showToast") {
-      options.imports.addReactNative("Alert");
-    }
-    return `<Pressable${classNameProp("items-center rounded-lg bg-blue-600 px-4 py-3")}${styleProp(node, options.styleNames)} onPress={${generateAction(action, options.screens, target, options.imports)}}><Text${classNameProp("font-semibold text-white")}>{${renderStringProp(node.props.label)}}</Text></Pressable>`;
+    return `<Button className="${mergedClasses}" label={${renderStringProp(node.props.label)}} onPress={${generateAction(action, options.screens, target, options.imports)}} />`;
   }
 
   if (node.type === "input") {
-    options.imports.addReactNative("TextInput");
-    return `<TextInput${classNameProp("rounded-lg border border-zinc-300 px-3 py-3 text-zinc-900")}${styleProp(node, options.styleNames)} ${propString("placeholder", node.props.placeholder)} defaultValue={${sourceString(node.props.defaultValue)}} />`;
+    options.imports.addUiComponent("Input");
+    const mergedClasses = mergeTailwindClasses("rounded-lg border border-zinc-300 px-3 py-3 text-zinc-900 bg-white", customClasses);
+    const variableName = typeof node.props.variableName === "string" ? node.props.variableName : "";
+    if (variableName) {
+      options.imports.add("../../infrastructure/api/api-client", "getValueByPath");
+      options.imports.add("../../infrastructure/api/api-client", "setValueByPath");
+      const valueExpr = expressionForStatePath(variableName);
+      const updateCode = setterForStatePath(variableName, "text");
+      return `<Input className="${mergedClasses}" placeholder=${sourceString(node.props.placeholder)} value={String(${valueExpr} ?? "")} onChangeText={(text) => { ${updateCode} }} />`;
+    }
+    return `<Input className="${mergedClasses}" placeholder=${sourceString(node.props.placeholder)} defaultValue={${sourceString(node.props.defaultValue)}} />`;
   }
 
   if (node.type === "image") {
-    options.imports.addReactNative("Image");
+    options.imports.addUiComponent("Image");
+    const mergedClasses = mergeTailwindClasses("rounded-lg", customClasses);
     const sourceUrl = node.props.sourceUrl ?? node.props.source;
-    return `<Image${classNameProp("rounded-lg")}${styleProp(node, options.styleNames)} source={${imageSourcePropValue(sourceUrl)}} />`;
+    return `<Image className="${mergedClasses}" source={${imageSourcePropValue(sourceUrl)}} />`;
   }
 
   if (node.type === "card") {
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Text");
+    options.imports.addUiComponent("Card");
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    const header = (node.children ?? []).length > 0
-      ? ""
-      : `<View${classNameProp("border-b border-zinc-100 p-4")}>
-        <Text${classNameProp("font-semibold text-zinc-900")}>{${sourceString(node.props.title)}}</Text>
-        <Text${classNameProp("text-zinc-500 text-xs mt-1")}>{${sourceString(node.props.description)}}</Text>
-      </View>`;
-    return `<View${classNameProp("border border-zinc-200 bg-white rounded-xl shadow-sm overflow-hidden")}${styleProp(node, options.styleNames)}>
-      ${header}
-      <View${classNameProp("p-4 gap-3")}>${children}</View>
-    </View>`;
+    const mergedClasses = mergeTailwindClasses("border border-zinc-200 bg-white rounded-xl shadow-sm overflow-hidden", customClasses);
+    const titleProp = node.props.title ? ` title=${sourceString(node.props.title)}` : "";
+    const descProp = node.props.description ? ` description=${sourceString(node.props.description)}` : "";
+    return `<Card className="${mergedClasses}"${titleProp}${descProp}>${children}</Card>`;
   }
 
   if (node.type === "badge") {
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Text");
+    options.imports.addUiComponent("Badge");
     const variant = node.props.variant ?? "default";
-    let bgClass = "bg-zinc-900";
-    let textClass = "text-zinc-50";
-    if (variant === "secondary") { bgClass = "bg-zinc-100"; textClass = "text-zinc-900"; }
-    if (variant === "destructive") { bgClass = "bg-red-500"; textClass = "text-zinc-50"; }
-    if (variant === "outline") { bgClass = "border border-zinc-200 bg-white"; textClass = "text-zinc-900"; }
-    return `<View${classNameProp(`self-start px-2.5 py-0.5 rounded-full ${bgClass}`)}${styleProp(node, options.styleNames)}><Text${classNameProp(`text-xs font-semibold ${textClass}`)}>{${sourceString(node.props.text)}}</Text></View>`;
+    return `<Badge className="${customClasses}" text=${sourceString(node.props.text)} variant="${variant}" />`;
   }
 
   if (node.type === "alert") {
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Text");
+    options.imports.addUiComponent("Alert");
     const variant = node.props.variant ?? "default";
-    const isDestructive = variant === "destructive";
-    const bgClass = isDestructive ? "border border-red-200 bg-red-50" : "border border-zinc-200 bg-white";
-    const titleClass = isDestructive ? "text-red-900 font-semibold text-sm" : "text-zinc-950 font-semibold text-sm";
-    const descClass = isDestructive ? "text-red-800 text-xs mt-1" : "text-zinc-500 text-xs mt-1";
-    return `<View${classNameProp(`p-4 rounded-lg ${bgClass}`)}${styleProp(node, options.styleNames)}>
-      <Text${classNameProp(titleClass)}>{${sourceString(node.props.title)}}</Text>
-      <Text${classNameProp(descClass)}>{${sourceString(node.props.description)}}</Text>
-    </View>`;
+    const titleProp = node.props.title ? ` title=${sourceString(node.props.title)}` : "";
+    const descProp = node.props.description ? ` description=${sourceString(node.props.description)}` : "";
+    return `<Alert className="${customClasses}" variant="${variant}"${titleProp}${descProp} />`;
   }
 
   if (node.type === "switch") {
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Text");
-    options.imports.addReactNative("Switch");
-    return `<View${classNameProp("flex-row items-center gap-2 py-1")}${styleProp(node, options.styleNames)}>
-      <Switch value={${Boolean(node.props.checked)}} />
-      <Text${classNameProp("text-sm text-zinc-900")}>{${sourceString(node.props.label)}}</Text>
-    </View>`;
+    options.imports.addUiComponent("Switch");
+    return `<Switch className="${customClasses}" checked={${Boolean(node.props.checked)}} label=${sourceString(node.props.label)} />`;
   }
 
   if (node.type === "slider") {
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Text");
+    options.imports.addUiComponent("Slider");
     const min = typeof node.props.min === "number" ? node.props.min : 0;
     const max = typeof node.props.max === "number" ? node.props.max : 100;
     const val = typeof node.props.defaultValue === "number" ? node.props.defaultValue : 50;
-    const percentage = Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
-    return `<View${classNameProp("w-full py-2")}${styleProp(node, options.styleNames)}>
-      <View${classNameProp("flex-row justify-between mb-1.5")}>
-        <Text${classNameProp("text-xs font-semibold text-zinc-700")}>{${sourceString(node.props.label)}}</Text>
-        <Text${classNameProp("text-xs text-zinc-500")}>{${val}}</Text>
-      </View>
-      <View${classNameProp("h-2 bg-zinc-100 rounded-full w-full justify-center relative")}>
-        <View${classNameProp("h-full bg-zinc-900 rounded-full")} style={{ width: "${percentage}%" }} />
-        <View${classNameProp("absolute h-5 w-5 rounded-full border border-zinc-200 bg-white shadow-sm")} style={{ left: "calc(${percentage}% - 10px)" }} />
-      </View>
-    </View>`;
+    return `<Slider className="${customClasses}" min={${min}} max={${max}} value={${val}} label=${sourceString(node.props.label)} />`;
   }
 
   if (node.type === "progress") {
-    options.imports.addReactNative("View");
+    options.imports.addUiComponent("Progress");
     const value = typeof node.props.value === "number" ? node.props.value : 60;
     const max = typeof node.props.max === "number" ? node.props.max : 100;
-    const percentage = Math.max(0, Math.min(100, (value / max) * 100));
-    return `<View${classNameProp("h-2.5 bg-zinc-100 rounded-full w-full overflow-hidden")}${styleProp(node, options.styleNames)}>
-      <View${classNameProp("h-full bg-zinc-900")} style={{ width: "${percentage}%" }} />
-    </View>`;
+    return `<Progress className="${customClasses}" value={${value}} max={${max}} />`;
   }
 
   if (node.type === "avatar") {
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Image");
-    options.imports.addReactNative("Text");
+    options.imports.addUiComponent("Avatar");
     const sourceUrl = node.props.sourceUrl;
+    const fallbackText = node.props.fallbackText ? ` fallbackText=${sourceString(node.props.fallbackText)}` : "";
     const size = typeof node.style?.size === "number" ? node.style.size : 40;
-    const sizeStyle = `width: ${size}, height: ${size}, borderRadius: ${size / 2}`;
-    if (sourceUrl) {
-      return `<Image${classNameProp("bg-zinc-100")}${styleProp(node, options.styleNames)} source={${imageSourcePropValue(sourceUrl)}} style={{ ${sizeStyle} }} />`;
-    } else {
-      return `<View${classNameProp("bg-zinc-100 items-center justify-center")}${styleProp(node, options.styleNames)} style={{ ${sizeStyle} }}>
-        <Text${classNameProp("text-xs font-semibold text-zinc-600")}>{${sourceString(node.props.fallbackText)}}</Text>
-      </View>`;
-    }
+    return `<Avatar className="${customClasses}" sourceUrl=${sourceString(sourceUrl)} size={${size}}${fallbackText} />`;
   }
 
   if (node.type === "checkbox") {
-    options.imports.addReactNative("Pressable");
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Text");
-    const checked = Boolean(node.props.checked);
-    return `<Pressable${classNameProp("flex-row items-center gap-2 py-1.5")}${styleProp(node, options.styleNames)}>
-      <View${classNameProp(`h-4 w-4 rounded-sm border border-zinc-300 items-center justify-center ${checked ? "bg-zinc-900 border-zinc-900" : "bg-white"}`)}>
-        {${checked} && <Text style={{ color: "#ffffff", fontSize: 10 }}>✓</Text>}
-      </View>
-      <Text${classNameProp("text-sm text-zinc-900")}>{${sourceString(node.props.label)}}</Text>
-    </Pressable>`;
+    options.imports.addUiComponent("Checkbox");
+    return `<Checkbox className="${customClasses}" checked={${Boolean(node.props.checked)}} label=${sourceString(node.props.label)} />`;
   }
 
   if (node.type === "textarea") {
-    options.imports.addReactNative("TextInput");
-    return `<TextInput${classNameProp("rounded-lg border border-zinc-300 px-3 py-3 text-zinc-900 align-top")}${styleProp(node, options.styleNames)} ${propString("placeholder", node.props.placeholder)} defaultValue={${sourceString(node.props.defaultValue)}} multiline={true} numberOfLines={4} />`;
+    options.imports.addUiComponent("TextArea");
+    const mergedClasses = mergeTailwindClasses("rounded-lg border border-zinc-300 px-3 py-3 text-zinc-900 align-top bg-white", customClasses);
+    const variableName = typeof node.props.variableName === "string" ? node.props.variableName : "";
+    if (variableName) {
+      options.imports.add("../../infrastructure/api/api-client", "getValueByPath");
+      options.imports.add("../../infrastructure/api/api-client", "setValueByPath");
+      const valueExpr = expressionForStatePath(variableName);
+      const updateCode = setterForStatePath(variableName, "text");
+      return `<TextArea className="${mergedClasses}" placeholder=${sourceString(node.props.placeholder)} value={String(${valueExpr} ?? "")} onChangeText={(text) => { ${updateCode} }} />`;
+    }
+    return `<TextArea className="${mergedClasses}" placeholder=${sourceString(node.props.placeholder)} defaultValue={${sourceString(node.props.defaultValue)}} />`;
   }
 
   if (node.type === "label") {
-    options.imports.addReactNative("Text");
-    return `<Text${classNameProp("text-sm font-semibold text-zinc-700")}${styleProp(node, options.styleNames)}>{${renderStringProp(node.props.text)}}</Text>`;
+    options.imports.addUiComponent("Label");
+    const mergedClasses = mergeTailwindClasses("text-sm font-semibold text-zinc-700", customClasses);
+    return `<Label className="${mergedClasses}" text={${renderStringProp(node.props.text)}} />`;
   }
 
   if (node.type === "separator") {
-    options.imports.addReactNative("View");
-    const isHorizontal = node.props.orientation === "horizontal";
-    const lineStyle = isHorizontal ? "h-[1px] w-full" : "w-[1px] h-full min-h-[20px]";
-    return `<View${classNameProp(`bg-zinc-200 ${lineStyle}`)}${styleProp(node, options.styleNames)} />`;
+    options.imports.addUiComponent("Separator");
+    const orientation = node.props.orientation === "vertical" ? "vertical" : "horizontal";
+    return `<Separator className="${customClasses}" orientation="${orientation}" />`;
   }
 
   if (node.type === "radioGroup") {
-    options.imports.addReactNative("Pressable");
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Text");
+    options.imports.addUiComponent("RadioGroup");
     const optionsText = typeof node.props.options === "string" ? node.props.options : "Option A\nOption B";
     const opts = optionsText.split("\n").filter(Boolean);
     const selected = node.props.selectedValue;
-    return `<View${classNameProp("gap-2 py-1")}${styleProp(node, options.styleNames)}>
-      <Text${classNameProp("text-xs font-semibold text-zinc-500")}>{${sourceString(node.props.label)}}</Text>
-      {${JSON.stringify(opts)}.map((option, idx) => {
-        const isSelected = option === ${sourceString(selected)};
-        return (
-          <Pressable key={idx}${classNameProp("flex-row items-center gap-2")}>
-            <View${classNameProp("h-4 w-4 rounded-full border border-zinc-300 items-center justify-center bg-white")} style={isSelected ? { borderColor: "#18181b" } : undefined}>
-              {isSelected && <View${classNameProp("h-2 w-2 rounded-full bg-zinc-900")} />}
-            </View>
-            <Text${classNameProp("text-sm text-zinc-900")}>{option}</Text>
-          </Pressable>
-        );
-      })}
-    </View>`;
+    return `<RadioGroup className="${customClasses}" label=${sourceString(node.props.label)} options={${JSON.stringify(opts)}} selectedValue=${sourceString(selected)} />`;
   }
 
   if (node.type === "accordion") {
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Text");
+    options.imports.addUiComponent("Accordion");
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    return `<View${classNameProp("border border-zinc-200 bg-white rounded-lg overflow-hidden")}${styleProp(node, options.styleNames)}>
-      <View${classNameProp("flex-row justify-between items-center px-4 py-3 bg-zinc-50/50 border-b border-zinc-100")}>
-        <Text${classNameProp("font-semibold text-zinc-700 text-sm")}>{${sourceString(node.props.title)}}</Text>
-        <Text>▼</Text>
-      </View>
-      <View${classNameProp("p-4 gap-2 border-t border-zinc-100 bg-white")}>
-        {${children ? `\n        <>${children}</>\n        ` : `\n        <Text${classNameProp("text-xs text-zinc-500")}>{${sourceString(node.props.description)}}</Text>\n        `}}
-      </View>
-    </View>`;
+    const titleProp = node.props.title ? ` title=${sourceString(node.props.title)}` : "";
+    const descProp = node.props.description ? ` description=${sourceString(node.props.description)}` : "";
+    return `<Accordion className="${customClasses}"${titleProp}${descProp}>${children}</Accordion>`;
   }
 
   if (node.type === "tabs") {
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Text");
+    options.imports.addUiComponent("Tabs");
     const tabsText = typeof node.props.tabs === "string" ? node.props.tabs : "Tab 1\nTab 2";
     const tabs = tabsText.split("\n").filter(Boolean);
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    return `<View${classNameProp("border border-zinc-200 bg-white rounded-lg overflow-hidden")}${styleProp(node, options.styleNames)}>
-      <View${classNameProp("flex-row border-b border-zinc-200 bg-zinc-50/50 p-1 gap-1")}>
-        {${JSON.stringify(tabs)}.map((tab, idx) => (
-          <View key={idx}${classNameProp("px-3 py-1.5 rounded-md bg-white border border-zinc-200 shadow-sm")} style={idx > 0 ? { backgroundColor: "transparent", borderColor: "transparent" } : undefined}>
-            <Text${classNameProp("text-xs font-semibold text-zinc-900")}>{tab}</Text>
-          </View>
-        ))}
-      </View>
-      <View${classNameProp("p-4 gap-2 bg-white")}>
-        {${children ? `\n        <>${children}</>\n        ` : `\n        <Text${classNameProp("text-xs text-zinc-500 text-center py-2")}>Content</Text>\n        `}}
-      </View>
-    </View>`;
+    return `<Tabs className="${customClasses}" tabs={${JSON.stringify(tabs)}}>${children}</Tabs>`;
   }
 
   if (node.type === "skeleton") {
-    options.imports.addReactNative("View");
-    return `<View${classNameProp("bg-zinc-200 rounded-sm")}${styleProp(node, options.styleNames)} />`;
+    options.imports.addUiComponent("Skeleton");
+    const mergedClasses = mergeTailwindClasses("bg-zinc-200 rounded-sm", customClasses);
+    return `<Skeleton className="${mergedClasses}" />`;
   }
 
   if (node.type === "scrollArea") {
-    options.imports.addReactNative("ScrollView");
-    options.imports.addReactNative("View");
+    options.imports.addUiComponent("ScrollArea");
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    const styleString = scrollViewStyleProp(node, options.styleNames, options.imports);
-    return `<ScrollView${classNameProp("w-full")}${styleString}>
-      <View${classNameProp("gap-2")}>${children}</View>
-    </ScrollView>`;
+    return `<ScrollArea className="${customClasses}">${children}</ScrollArea>`;
   }
 
   if (node.type === "aspectRatio") {
-    options.imports.addReactNative("View");
+    options.imports.addUiComponent("AspectRatio");
     const ratio = typeof node.props.ratio === "number" ? node.props.ratio : 1.77;
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    return `<View style={{ aspectRatio: ${ratio}, width: "100%", overflow: "hidden" }}>${children}</View>`;
+    return `<AspectRatio className="${customClasses}" ratio={${ratio}}>${children}</AspectRatio>`;
   }
 
   if (node.type === "pagination") {
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Text");
-    options.imports.addReactNative("Pressable");
+    options.imports.addUiComponent("Pagination");
     const cur = typeof node.props.currentPage === "number" ? node.props.currentPage : 1;
     const total = typeof node.props.totalPages === "number" ? node.props.totalPages : 5;
     const showEllipsis = node.props.showEllipsis !== false;
-
-    return `<View${classNameProp("flex-row items-center justify-center gap-1.5 py-2 w-full")}${styleProp(node, options.styleNames)}>
-      <Pressable${classNameProp("px-2 py-1.5 rounded border border-zinc-200 bg-white")}><Text${classNameProp("text-xs font-semibold text-zinc-500")}>&lt; Prev</Text></Pressable>
-      {(() => {
-        const cur = ${cur};
-        const total = ${total};
-        const showEllipsis = ${showEllipsis};
-        const pages = [];
-        if (total <= 4) {
-          for (let i = 1; i <= total; i++) pages.push(i);
-        } else {
-          pages.push(1);
-          if (cur > 2) {
-            if (showEllipsis) pages.push("...");
-            else pages.push(cur - 1);
-          } else if (cur === 2 && total > 2) {
-            pages.push(2);
-          }
-          if (cur > 2 && cur < total - 1) pages.push(cur);
-          if (cur < total - 1) {
-            if (showEllipsis) pages.push("...");
-            else pages.push(cur + 1);
-          } else if (cur === total - 1 && total > 2 && cur > 2) {
-            pages.push(total - 1);
-          }
-          if (total > 1) pages.push(total);
-        }
-        const finalPages = Array.from(new Set(pages.map(String))).map(p => p === "..." ? "..." : Number(p));
-        return finalPages.map((p, idx) => {
-          const isActive = p === cur;
-          return (
-            <Pressable key={idx}${classNameProp("min-w-[28px] h-7 px-1 rounded border items-center justify-center")} style={isActive ? { backgroundColor: "#18181b", borderColor: "#18181b" } : p === "..." ? { borderColor: "transparent", backgroundColor: "transparent" } : { borderColor: "#e4e4e7", backgroundColor: "#ffffff" }}>
-              <Text style={{ fontSize: 12, fontWeight: "600", color: isActive ? "#ffffff" : p === "..." ? "#a1a1aa" : "#52525b" }}>{p}</Text>
-            </Pressable>
-          );
-        });
-      })()}
-      <Pressable${classNameProp("px-2 py-1.5 rounded border border-zinc-200 bg-white")}><Text${classNameProp("text-xs font-semibold text-zinc-500")}>Next &gt;</Text></Pressable>
-    </View>`;
+    return `<Pagination className="${customClasses}" currentPage={${cur}} totalPages={${total}} showEllipsis={${showEllipsis}} />`;
   }
 
   if (node.type === "row") {
+    options.imports.addUiComponent("Row");
     const hasManyChildren = (node.children ?? []).length >= 2;
-    const componentName = hasManyChildren ? "ScrollView" : "View";
-    options.imports.addReactNative(componentName);
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    const horizontalProp = hasManyChildren ? " horizontal={true} showsHorizontalScrollIndicator={false}" : "";
-    const styleString = hasManyChildren
-      ? scrollViewStyleProp(node, options.styleNames, options.imports)
-      : styleProp(node, options.styleNames);
-    const classProps = hasManyChildren
-      ? scrollViewClassProps("flex-row items-center gap-2", node)
-      : classNameProp("flex-row items-center gap-2");
-    return `<${componentName}${classProps}${horizontalProp}${styleString}>
-${children}
-</${componentName}>`;
+    return `<Row className="${customClasses}" scrollable={${hasManyChildren}}>${children}</Row>`;
   }
 
   if (node.type === "column") {
+    options.imports.addUiComponent("Column");
     const hasManyChildren = (node.children ?? []).length >= 2;
-    const componentName = hasManyChildren ? "ScrollView" : "View";
-    options.imports.addReactNative(componentName);
     const children = (node.children ?? []).map((child) => generateNode(child, options)).join("\n");
-    const styleString = hasManyChildren
-      ? scrollViewStyleProp(node, options.styleNames, options.imports)
-      : styleProp(node, options.styleNames);
-    const classProps = hasManyChildren
-      ? scrollViewClassProps("gap-2", node)
-      : classNameProp("gap-2");
-    return `<${componentName}${classProps}${styleString}>
-${children}
-</${componentName}>`;
+    return `<Column className="${customClasses}" scrollable={${hasManyChildren}}>${children}</Column>`;
   }
 
   if (node.type === "heading") {
-    options.imports.addReactNative("Text");
-    return `<Text${classNameProp("font-bold text-zinc-900")}${styleProp(node, options.styleNames)}>{${renderStringProp(node.props.text)}}</Text>`;
+    options.imports.addUiComponent("Heading");
+    const level = typeof node.props.level === "number" ? node.props.level : 1;
+    return `<Heading className="${customClasses}" text={${renderStringProp(node.props.text)}} level={${level}} />`;
   }
 
   if (node.type === "list") {
-    options.imports.addReactNative("View");
-    options.imports.addReactNative("Text");
+    options.imports.addUiComponent("List");
     const title = typeof node.props.title === "string" ? node.props.title : "";
     const itemsText = typeof node.props.items === "string" ? node.props.items : "Item 1\nItem 2\nItem 3";
     const items = itemsText.split("\n").filter(Boolean);
     const ordered = node.props.ordered === true;
     const showDividers = node.props.showDividers === true;
-    const style = node.style ?? {};
-    const gap = typeof style.gap === "number" ? style.gap : 8;
-    const fontSize = typeof style.fontSize === "number" ? style.fontSize : 14;
-
-    const itemsJsx = items.map((item, idx) => {
-      const isLast = idx === items.length - 1;
-      const divider = showDividers && !isLast
-        ? `\n      <View style={{ height: 1, backgroundColor: "#e4e4e7", width: "100%" }} />`
-        : "";
-      const prefix = ordered ? `${idx + 1}.` : "•";
-      const verticalPadding = showDividers
-        ? ` style={{ paddingTop: ${idx > 0 ? gap : 0}, paddingBottom: ${isLast ? 0 : gap} }}`
-        : "";
-
-      return `    <View key={${idx}} style={{ flexDirection: "column" }}>
-      <View style={{ flexDirection: "row", alignItems: "flex-start" }}${verticalPadding}>
-        <Text style={{ fontSize: ${fontSize}, color: ${sourceString(String(style.color ?? "#111827"))}, marginRight: 8, opacity: ${ordered ? 0.6 : 0.5} }}>${prefix}</Text>
-        <Text style={{ fontSize: ${fontSize}, color: ${sourceString(String(style.color ?? "#111827"))}, fontWeight: ${sourceString(String(style.fontWeight ?? "400"))}, flex: 1 }}>{${sourceString(item)}}</Text>
-      </View>${divider}
-    </View>`;
-    }).join("\n");
-
-    const titleJsx = title
-      ? `<Text style={{ fontSize: ${fontSize + 2}, fontWeight: "600", color: ${sourceString(String(style.color ?? "#111827"))}, marginBottom: 8 }}>{${sourceString(title)}}</Text>\n`
-      : "";
-
-    return `<View${styleProp(node, options.styleNames)}>
-${titleJsx}  <View style={{ gap: ${showDividers ? 0 : gap} }}>
-${itemsJsx}
-  </View>
-</View>`;
+    const titleProp = title ? ` title=${sourceString(title)}` : "";
+    return `<List className="${customClasses}"${titleProp} items={${JSON.stringify(items)}} ordered={${ordered}} showDividers={${showDividers}} />`;
   }
 
   return "";
