@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { clsx } from "clsx";
 import type { MiniAppAction, MiniAppNode } from "@/mini-app/types/mini-app.types";
-import { useBuilderStore, useSelectedNode } from "@/features/builder/store/builder.store";
+import { useBuilderStore, useSelectedNode, useActiveScreen } from "@/features/builder/store/builder.store";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value : "";
@@ -15,7 +15,7 @@ function numberValue(value: unknown, fallback = 0) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+    <label className="flex flex-col gap-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400 select-none">
       {label}
       {children}
     </label>
@@ -26,17 +26,30 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20"
+      className={clsx(
+        "rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-500 shadow-sm hover:border-slate-350 dark:hover:border-slate-700",
+        props.className
+      )}
     />
   );
 }
 
 function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select
-      {...props}
-      className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 cursor-pointer"
-    />
+    <div className="relative w-full">
+      <select
+        {...props}
+        className={clsx(
+          "w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-955 pl-3.5 pr-10 py-2.5 text-xs text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm hover:border-slate-350 dark:hover:border-slate-700",
+          props.className
+        )}
+      />
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 dark:text-slate-500">
+        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </div>
   );
 }
 
@@ -45,7 +58,7 @@ function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     <textarea
       {...props}
       className={clsx(
-        "rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20",
+        "rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-955 px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-500 shadow-sm hover:border-slate-350 dark:hover:border-slate-700 resize-y",
         props.className
       )}
     />
@@ -62,7 +75,7 @@ function SegmentedControl<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div className="flex rounded-lg bg-slate-100 dark:bg-slate-950 p-0.5 w-full">
+    <div className="flex rounded-xl bg-slate-100 dark:bg-slate-950 p-1 w-full border border-slate-200/40 dark:border-slate-800/40">
       {options.map((option) => {
         const isActive = option.value === value;
         return (
@@ -71,10 +84,10 @@ function SegmentedControl<T extends string>({
             type="button"
             onClick={() => onChange(option.value)}
             className={clsx(
-              "flex-1 rounded-md py-1.5 text-center text-xs font-semibold transition select-none cursor-pointer",
+              "flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition select-none cursor-pointer",
               isActive
-                ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                ? "bg-white dark:bg-slate-900 text-slate-850 dark:text-slate-100 shadow-sm"
+                : "text-slate-450 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250"
             )}
           >
             {option.label}
@@ -88,7 +101,7 @@ function SegmentedControl<T extends string>({
 function ColorField({ value, onChange }: { value: string; onChange: (val: string) => void }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="relative size-8 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm bg-slate-50 dark:bg-slate-950">
+      <div className="relative size-9 shrink-0 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm bg-slate-55 dark:bg-slate-950 hover:border-slate-300 dark:hover:border-slate-700 transition">
         <input
           type="color"
           value={value}
@@ -100,7 +113,7 @@ function ColorField({ value, onChange }: { value: string; onChange: (val: string
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-205 outline-none transition focus:border-indigo-300 dark:focus:border-indigo-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20"
+        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/45 dark:bg-slate-955 px-3 py-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-500 shadow-sm hover:border-slate-350 dark:hover:border-slate-700"
         placeholder="#000000"
       />
     </div>
@@ -420,11 +433,327 @@ function SpacingControl({
 
 function InspectorSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border-b border-slate-100 dark:border-slate-800 py-3.5 flex flex-col gap-3">
-      <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500 select-none">
-        {title}
-      </h3>
+    <div className="border-b border-slate-100 dark:border-slate-850/80 py-4 flex flex-col gap-3">
+      <div className="flex items-center gap-1.5 select-none">
+        <span className="size-1.5 rounded-full bg-indigo-500/80"></span>
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-450 dark:text-slate-500">
+          {title}
+        </h3>
+      </div>
       {children}
+    </div>
+  );
+}
+
+function ActionSelector({
+  label,
+  action,
+  onChange,
+  miniApp,
+}: {
+  label: string;
+  action: MiniAppAction | undefined;
+  onChange: (act: MiniAppAction | null) => void;
+  miniApp: any;
+}) {
+  const integrations = miniApp.integrations || [];
+  const apiPaths = miniApp.apiPaths || [];
+
+  const makeDefaultRequestMappings = (pathId: string) => {
+    const path = apiPaths.find((candidate: any) => candidate.id === pathId);
+    return (path?.requestSchema || []).map((field: any) => ({
+      parameter: field.name,
+      sourceType: "static" as const,
+      sourceValue: field.defaultValue !== undefined ? String(field.defaultValue) : "",
+    }));
+  };
+
+  const makeDefaultResponseMappings = (pathId: string) => {
+    const path = apiPaths.find((candidate: any) => candidate.id === pathId);
+    return (path?.responseSchema || []).slice(0, 4).map((field: any) => {
+      const lastSegment = String(field.name).split(".").filter((part) => !/^\d+$/.test(part)).pop() || "apiValue";
+      const targetVariable = lastSegment
+        .replace(/[^a-zA-Z0-9_]/g, "_")
+        .replace(/^(\d)/, "_$1");
+      return {
+        responsePath: field.name,
+        targetVariable,
+      };
+    });
+  };
+
+  const handleTypeChange = (type: string) => {
+    if (type === "none") {
+      onChange(null);
+    } else if (type === "navigate") {
+      onChange({ type: "navigate", screenId: miniApp.screens[0]?.id || "" });
+    } else if (type === "goBack") {
+      onChange({ type: "goBack" });
+    } else if (type === "showAlert") {
+      onChange({ type: "showAlert", message: "Action Triggered" });
+    } else if (type === "showToast") {
+      onChange({ type: "showToast", message: "Toast notification" });
+    } else if (type === "setVariable") {
+      onChange({ type: "setVariable", variable: "myVar", value: "newValue" });
+    } else if (type === "invokeApi") {
+      const integrationId = integrations[0]?.id || "";
+      const pathId = apiPaths.find((path: any) => path.integrationId === integrationId)?.id || "";
+      onChange({
+        type: "invokeApi",
+        integrationId,
+        pathId,
+        requestMappings: makeDefaultRequestMappings(pathId),
+        responseMappings: makeDefaultResponseMappings(pathId),
+        onLoading: { type: "showToast", message: "Loading..." },
+        onError: { type: "showToast", message: "API request failed" },
+      });
+    }
+  };
+
+  const selectedIntId = action?.type === "invokeApi" ? action.integrationId : "";
+  const pathsForSelectedInt = apiPaths.filter((p: any) => p.integrationId === selectedIntId);
+
+  return (
+    <div className="flex flex-col gap-3 border border-slate-100 dark:border-slate-800 p-2.5 rounded-lg bg-slate-50/20">
+      <Field label={label}>
+        <Select value={action?.type ?? "none"} onChange={(e) => handleTypeChange(e.target.value)}>
+          <option value="none">None</option>
+          <option value="navigate">Navigate to Screen</option>
+          <option value="goBack">Go Back</option>
+          <option value="showAlert">Show Alert</option>
+          <option value="showToast">Show Toast</option>
+          <option value="setVariable">Set State Variable</option>
+          <option value="invokeApi">Call API</option>
+        </Select>
+      </Field>
+
+      {action?.type === "navigate" && (
+        <Field label="Target screen">
+          <Select value={action.screenId} onChange={(e) => onChange({ ...action, screenId: e.target.value })}>
+            {miniApp.screens.map((screen: any) => (
+              <option key={screen.id} value={screen.id}>
+                {screen.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+
+      {action?.type === "showAlert" && (
+        <Field label="Alert message">
+          <TextInput value={action.message} onChange={(e) => onChange({ ...action, message: e.target.value })} />
+        </Field>
+      )}
+
+      {action?.type === "showToast" && (
+        <Field label="Toast message">
+          <TextInput value={action.message} onChange={(e) => onChange({ ...action, message: e.target.value })} />
+        </Field>
+      )}
+
+      {action?.type === "setVariable" && (
+        <div className="flex flex-col gap-2">
+          <Field label="Variable name">
+            <TextInput value={action.variable} onChange={(e) => onChange({ ...action, variable: e.target.value })} />
+          </Field>
+          <Field label="Value to set">
+            <TextInput value={String(action.value ?? "")} onChange={(e) => onChange({ ...action, value: e.target.value })} />
+          </Field>
+        </div>
+      )}
+
+      {action?.type === "invokeApi" && (
+        <div className="flex flex-col gap-3 bg-white dark:bg-slate-950 p-2.5 rounded-md border border-slate-200 dark:border-slate-855">
+          {integrations.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Add or import an API from the APIs tab first.
+            </div>
+          ) : null}
+          <Field label="Service Integration">
+            <Select
+              value={action.integrationId}
+              onChange={(e) => {
+                const newIntId = e.target.value;
+                const pathId = apiPaths.find((p: any) => p.integrationId === newIntId)?.id || "";
+                onChange({
+                  ...action,
+                  integrationId: newIntId,
+                  pathId,
+                  requestMappings: makeDefaultRequestMappings(pathId),
+                  responseMappings: makeDefaultResponseMappings(pathId),
+                });
+              }}
+            >
+              <option value="">Select service</option>
+              {integrations.map((i: any) => (
+                <option key={i.id} value={i.id}>{i.name}</option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field label="API Operation">
+            <Select
+              value={action.pathId}
+              onChange={(e) => {
+                const pathId = e.target.value;
+                onChange({
+                  ...action,
+                  pathId,
+                  requestMappings: makeDefaultRequestMappings(pathId),
+                  responseMappings: makeDefaultResponseMappings(pathId),
+                });
+              }}
+            >
+              <option value="">-- Select Operation --</option>
+              {pathsForSelectedInt.map((p: any) => (
+                <option key={p.id} value={p.id}>{p.method} {p.path}</option>
+              ))}
+            </Select>
+          </Field>
+
+          {action.pathId && (
+            <div className="flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800 pt-2">
+              <span className="text-[10px] font-bold text-slate-400">Request Mapping</span>
+              {(apiPaths.find((p: any) => p.id === action.pathId)?.requestSchema || []).map((field: any) => {
+                const currentMapping = action.requestMappings.find(m => m.parameter === field.name) || {
+                  parameter: field.name,
+                  sourceType: "static",
+                  sourceValue: field.defaultValue !== undefined ? String(field.defaultValue) : "",
+                };
+
+                const updateMapping = (updatedFields: Partial<typeof currentMapping>) => {
+                  const mappings = action.requestMappings.filter(m => m.parameter !== field.name);
+                  mappings.push({ ...currentMapping, ...updatedFields });
+                  onChange({ ...action, requestMappings: mappings });
+                };
+
+                const credentials = miniApp.credentials || [];
+
+                return (
+                  <div key={field.name} className="flex flex-col gap-1 bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded">
+                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-350">{field.name} ({field.type})</span>
+                    <div className="flex gap-1.5 items-center">
+                      <Select
+                        value={currentMapping.sourceType}
+                        onChange={(e) => updateMapping({ sourceType: e.target.value as any, sourceValue: "" })}
+                        className="text-[11px] py-1 px-1.5 h-7 shrink-0"
+                      >
+                        <option value="static">Static</option>
+                        <option value="variable">State Var</option>
+                        <option value="credential">Credential</option>
+                      </Select>
+                      {currentMapping.sourceType === "credential" ? (
+                        <Select
+                          value={currentMapping.sourceValue}
+                          onChange={(e) => updateMapping({ sourceValue: e.target.value })}
+                          className="flex-1 text-[11px] py-1 px-1.5 h-7"
+                        >
+                          <option value="">-- Select Credential --</option>
+                          {credentials.map((cred: any) => (
+                            <option key={cred.id} value={cred.id}>{cred.name}</option>
+                          ))}
+                        </Select>
+                      ) : (
+                        <input
+                          placeholder={currentMapping.sourceType === "static" ? "Static value" : "Variable name"}
+                          value={currentMapping.sourceValue}
+                          onChange={(e) => updateMapping({ sourceValue: e.target.value })}
+                          className="flex-1 rounded border border-slate-200 dark:border-slate-855 bg-white dark:bg-slate-950 px-2 py-0.5 text-xs outline-none text-slate-900 dark:text-slate-100"
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {action.pathId && (
+            <div className="flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800 pt-2">
+              <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400">Save Response Values</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const mappings = [...action.responseMappings, { responsePath: "", targetVariable: "" }];
+                    onChange({ ...action, responseMappings: mappings });
+                  }}
+                  className="text-[9px] font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                >
+                  + Add Mapping
+                </button>
+              </div>
+              {action.responseMappings.map((mapping, idx) => (
+                <div key={idx} className="flex gap-1 items-center">
+                  <input
+                    placeholder="response path"
+                    value={mapping.responsePath}
+                    onChange={(e) => {
+                      const list = [...action.responseMappings];
+                      list[idx].responsePath = e.target.value;
+                      onChange({ ...action, responseMappings: list });
+                    }}
+                    className="flex-1 rounded border border-slate-200 dark:border-slate-855 bg-slate-50 dark:bg-slate-900 px-2 py-1 text-[11px] outline-none text-slate-900 dark:text-slate-100"
+                  />
+                  <span className="text-[10px] text-slate-400">&rarr;</span>
+                  <input
+                    placeholder="variable"
+                    value={mapping.targetVariable}
+                    onChange={(e) => {
+                      const list = [...action.responseMappings];
+                      list[idx].targetVariable = e.target.value;
+                      onChange({ ...action, responseMappings: list });
+                    }}
+                    className="flex-1 rounded border border-slate-200 dark:border-slate-855 bg-slate-50 dark:bg-slate-900 px-2 py-1 text-[11px] outline-none text-slate-900 dark:text-slate-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const list = action.responseMappings.filter((_, i) => i !== idx);
+                      onChange({ ...action, responseMappings: list });
+                    }}
+                    className="text-rose-500 hover:text-rose-600 text-xs font-bold p-0.5 cursor-pointer"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800 pt-2">
+            <span className="text-[10px] font-bold text-slate-400">Lifecycle Callbacks</span>
+
+            <ActionSelector
+              label="onLoading Callback"
+              action={action.onLoading}
+              onChange={(act) => onChange({ ...action, onLoading: act ?? undefined })}
+              miniApp={miniApp}
+            />
+
+            <ActionSelector
+              label="onLoaded Callback"
+              action={action.onLoaded}
+              onChange={(act) => onChange({ ...action, onLoaded: act ?? undefined })}
+              miniApp={miniApp}
+            />
+
+            <ActionSelector
+              label="onEmpty Callback"
+              action={action.onEmpty}
+              onChange={(act) => onChange({ ...action, onEmpty: act ?? undefined })}
+              miniApp={miniApp}
+            />
+
+            <ActionSelector
+              label="onError Callback"
+              action={action.onError}
+              onChange={(act) => onChange({ ...action, onError: act ?? undefined })}
+              miniApp={miniApp}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -436,6 +765,8 @@ export function PropertyInspector() {
   const updateNodeProps = useBuilderStore((state) => state.updateNodeProps);
   const updateNodeStyle = useBuilderStore((state) => state.updateNodeStyle);
   const updateNodeAction = useBuilderStore((state) => state.updateNodeAction);
+  const updateScreenOnLoadAction = useBuilderStore((state) => state.updateScreenOnLoadAction);
+  const activeScreen = useActiveScreen();
 
   const setActionType = (type: "none" | "navigate" | "goBack" | "showAlert" | "showToast" | "setVariable") => {
     if (!node) return;
@@ -467,18 +798,34 @@ export function PropertyInspector() {
 
   return (
     <aside className="w-full shrink-0 overflow-auto border-t xl:border-t-0 xl:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-4 xl:w-80 transition-colors duration-150">
-      <div className="mb-5">
-        <h2 className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500 select-none">App Pages</h2>
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {miniApp.screens.map((screen) => (
-            <div
-              key={screen.id}
-              className="h-16 w-11 shrink-0 rounded-md border border-teal-200 dark:border-teal-800/40 bg-[linear-gradient(135deg,#dbeafe,#dcfce7)] dark:bg-gradient-to-br dark:from-indigo-950 dark:to-teal-950 p-1 shadow-sm"
-              title={screen.name}
-            >
-              <div className="h-full rounded border border-white/80 dark:border-slate-800/80 bg-white/35 dark:bg-slate-950/20" />
-            </div>
-          ))}
+      <div className="mb-6 select-none">
+        <div className="flex items-center gap-1.5 mb-3">
+          <span className="size-1.5 rounded-full bg-teal-500/80"></span>
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-450 dark:text-slate-500">App Pages</h2>
+        </div>
+        <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin">
+          {miniApp.screens.map((screen) => {
+            const isActive = screen.id === activeScreen?.id;
+            return (
+              <div
+                key={screen.id}
+                className={clsx(
+                  "h-16 w-11 shrink-0 rounded-xl border p-1 shadow-sm transition cursor-pointer relative group",
+                  isActive
+                    ? "border-indigo-500 bg-indigo-50/10 dark:bg-indigo-950/15 ring-1 ring-indigo-500"
+                    : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:border-slate-350 dark:hover:border-slate-700"
+                )}
+                title={screen.name}
+              >
+                <div className="h-full rounded-lg border border-dashed border-slate-250 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 flex items-center justify-center">
+                  <svg className={clsx("size-4 transition", isActive ? "text-indigo-500 scale-105" : "text-slate-400 group-hover:scale-105")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                    <line x1="12" y1="18" x2="12.01" y2="18" />
+                  </svg>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
       
@@ -548,6 +895,13 @@ export function PropertyInspector() {
                 </Field>
                 <Field label="Default Value">
                   <TextInput value={textValue(node.props.defaultValue)} onChange={(e) => updateNodeProps(node.id, { defaultValue: e.target.value })} />
+                </Field>
+                <Field label="State Variable">
+                  <TextInput
+                    value={textValue(node.props.variableName)}
+                    placeholder="e.g. inputText"
+                    onChange={(e) => updateNodeProps(node.id, { variableName: e.target.value })}
+                  />
                 </Field>
               </>
             )}
@@ -1038,58 +1392,35 @@ export function PropertyInspector() {
           {/* Section 7: Actions */}
           {node && (
             <InspectorSection title="Actions">
-              <Field label="On Press trigger">
-                <Select value={node.events?.onPress?.type ?? "none"} onChange={(e) => setActionType(e.target.value as any)}>
-                  <option value="none">None</option>
-                  <option value="navigate">Navigate to Screen</option>
-                  <option value="goBack">Go Back</option>
-                  <option value="showAlert">Show Alert Notification</option>
-                  <option value="showToast">Show Toast Notification</option>
-                  <option value="setVariable">Set State Variable</option>
-                </Select>
-              </Field>
-
-              {node.events?.onPress?.type === "navigate" && (
-                <Field label="Target screen">
-                  <Select value={node.events.onPress.screenId} onChange={(e) => updateAction({ type: "navigate", screenId: e.target.value })}>
-                    {miniApp.screens.map((screen) => (
-                      <option key={screen.id} value={screen.id}>
-                        {screen.name}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              )}
-
-              {node.events?.onPress?.type === "showAlert" && (
-                <Field label="Alert message">
-                  <TextInput value={node.events.onPress.message} onChange={(e) => updateAction({ type: "showAlert", message: e.target.value })} />
-                </Field>
-              )}
-
-              {node.events?.onPress?.type === "showToast" && (
-                <Field label="Toast message">
-                  <TextInput value={node.events.onPress.message} onChange={(e) => updateAction({ type: "showToast", message: e.target.value })} />
-                </Field>
-              )}
-
-              {node.events?.onPress?.type === "setVariable" && (
-                <div className="flex flex-col gap-3">
-                  <Field label="Variable name">
-                    <TextInput value={node.events.onPress.variable} onChange={(e) => updateAction({ type: "setVariable", variable: e.target.value, value: node.events?.onPress?.type === "setVariable" ? node.events.onPress.value : "" })} />
-                  </Field>
-                  <Field label="Value to set">
-                    <TextInput value={String(node.events.onPress.value ?? "")} onChange={(e) => updateAction({ type: "setVariable", variable: node.events?.onPress?.type === "setVariable" ? node.events.onPress.variable : "myVar", value: e.target.value })} />
-                  </Field>
-                </div>
-              )}
+              <ActionSelector
+                label="On Press trigger"
+                action={node.events?.onPress}
+                onChange={(act) => updateNodeAction(node.id, act)}
+                miniApp={miniApp}
+              />
             </InspectorSection>
           )}
 
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 p-6 text-center text-sm font-semibold text-slate-400 dark:text-slate-500 select-none">
-          Select a component on the canvas to configure properties.
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 px-3.5 py-3 shadow-sm mb-1.5 select-none">
+            <svg className="size-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Active Workspace</span>
+              <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 truncate">Screen: {activeScreen?.name}</span>
+            </div>
+          </div>
+          <InspectorSection title="Screen Lifecycle">
+            <ActionSelector
+              label="On Screen Load"
+              action={activeScreen?.events?.onLoad}
+              onChange={(act) => updateScreenOnLoadAction(activeScreen.id, act)}
+              miniApp={miniApp}
+            />
+          </InspectorSection>
         </div>
       )}
 
