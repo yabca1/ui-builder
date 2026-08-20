@@ -79,6 +79,16 @@ type BuilderState = {
   clearTheme: () => void;
   createTheme: () => void;
   saveProject: () => Promise<void>;
+  addCredential: (credential: any) => void;
+  updateCredential: (id: string, credential: any) => void;
+  deleteCredential: (id: string) => void;
+  addIntegration: (integration: any) => void;
+  updateIntegration: (id: string, integration: any) => void;
+  deleteIntegration: (id: string) => void;
+  addApiPath: (path: any) => void;
+  updateApiPath: (id: string, path: any) => void;
+  deleteApiPath: (id: string) => void;
+  updateScreenOnLoadAction: (screenId: string, action: any | null) => void;
 };
 
 function sampleMiniApp(): MiniApp {
@@ -126,6 +136,9 @@ function sampleMiniApp(): MiniApp {
       },
     ],
     theme: themePresets.default,
+    credentials: [],
+    integrations: [],
+    apiPaths: [],
   };
 }
 
@@ -916,6 +929,89 @@ export const useBuilderStore = create<BuilderState>()(
           set({ isSaving: false });
         }
       },
+      addCredential: (credential) =>
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            credentials: [...(state.miniApp.credentials || []), credential],
+          },
+        })),
+      updateCredential: (id, updated) =>
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            credentials: (state.miniApp.credentials || []).map((c) =>
+              c.id === id ? { ...c, ...updated } : c
+            ),
+          },
+        })),
+      deleteCredential: (id) =>
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            credentials: (state.miniApp.credentials || []).filter((c) => c.id !== id),
+          },
+        })),
+      addIntegration: (integration) =>
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            integrations: [...(state.miniApp.integrations || []), integration],
+          },
+        })),
+      updateIntegration: (id, updated) =>
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            integrations: (state.miniApp.integrations || []).map((i) =>
+              i.id === id ? { ...i, ...updated } : i
+            ),
+          },
+        })),
+      deleteIntegration: (id) =>
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            integrations: (state.miniApp.integrations || []).filter((i) => i.id !== id),
+          },
+        })),
+      addApiPath: (apiPath) =>
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            apiPaths: [...(state.miniApp.apiPaths || []), apiPath],
+          },
+        })),
+      updateApiPath: (id, updated) =>
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            apiPaths: (state.miniApp.apiPaths || []).map((p) =>
+              p.id === id ? { ...p, ...updated } : p
+            ),
+          },
+        })),
+      deleteApiPath: (id) =>
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            apiPaths: (state.miniApp.apiPaths || []).filter((p) => p.id !== id),
+          },
+        })),
+      updateScreenOnLoadAction: (screenId, action) =>
+        set((state) => ({
+          miniApp: {
+            ...state.miniApp,
+            screens: state.miniApp.screens.map((screen) =>
+              screen.id === screenId
+                ? {
+                    ...screen,
+                    events: action ? { ...screen.events, onLoad: action } : undefined,
+                  }
+                : screen
+            ),
+          },
+        })),
     }),
     {
       name: "mini-app-builder",
@@ -945,6 +1041,9 @@ export function serializeProject(project: any) {
     theme: project.theme || {},
     screens: project.screens || [],
     ownerId: project.ownerId !== undefined ? project.ownerId : null,
+    ...(project.credentials !== undefined ? { credentials: project.credentials } : {}),
+    ...(project.integrations !== undefined ? { integrations: project.integrations } : {}),
+    ...(project.apiPaths !== undefined ? { apiPaths: project.apiPaths } : {}),
   };
 }
 
@@ -957,5 +1056,8 @@ export function serializeProjectForAutosave(project: any) {
     entryScreenId: project.entryScreenId || "",
     screens: project.screens || [],
     ownerId: project.ownerId !== undefined ? project.ownerId : null,
+    ...(project.credentials !== undefined ? { credentials: project.credentials } : {}),
+    ...(project.integrations !== undefined ? { integrations: project.integrations } : {}),
+    ...(project.apiPaths !== undefined ? { apiPaths: project.apiPaths } : {}),
   };
 }
