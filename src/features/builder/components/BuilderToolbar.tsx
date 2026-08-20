@@ -21,6 +21,81 @@ const screenSizeLimits = {
   height: { min: 360, max: 1366 },
 };
 
+type ToolbarIconName = "preview" | "edit" | "copy" | "import" | "export" | "reset";
+
+function ToolbarIcon({ name }: { name: ToolbarIconName }) {
+  const common = {
+    className: "size-4 shrink-0",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.2",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  if (name === "preview") {
+    return (
+      <svg {...common}>
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    );
+  }
+
+  if (name === "edit") {
+    return (
+      <svg {...common}>
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+      </svg>
+    );
+  }
+
+  if (name === "copy") {
+    return (
+      <svg {...common}>
+        <rect x="9" y="9" width="11" height="11" rx="2" />
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      </svg>
+    );
+  }
+
+  if (name === "import") {
+    return (
+      <svg {...common}>
+        <path d="M12 3v12" />
+        <path d="m7 8 5-5 5 5" />
+        <path d="M5 21h14" />
+        <path d="M5 17v4" />
+        <path d="M19 17v4" />
+      </svg>
+    );
+  }
+
+  if (name === "export") {
+    return (
+      <svg {...common}>
+        <path d="M12 21V9" />
+        <path d="m7 16 5 5 5-5" />
+        <path d="M5 3h14" />
+        <path d="M5 3v4" />
+        <path d="M19 3v4" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6 18 20H6L5 6" />
+      <path d="M10 11v5" />
+      <path d="M14 11v5" />
+    </svg>
+  );
+}
+
 function downloadJson(json: string) {
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -142,7 +217,7 @@ export function BuilderToolbar() {
   };
 
   return (
-    <header className="flex min-h-14 flex-col gap-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-3 text-slate-900 dark:text-slate-100 shadow-sm sm:px-4 lg:flex-row lg:items-center lg:justify-between lg:py-2 transition-colors duration-200">
+    <header className="flex min-h-14 flex-col gap-3 border-b border-slate-200/80 bg-white/95 px-3 py-3 text-slate-900 shadow-sm shadow-slate-900/5 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 dark:text-slate-100 sm:px-4 lg:flex-row lg:items-center lg:justify-between lg:py-2 transition-colors duration-200">
       <div className="flex w-full min-w-0 flex-1 items-center gap-3 lg:w-auto">
         <div className="flex shrink-0 items-center gap-1.5">
           <span className="size-3 rounded-full bg-red-400" />
@@ -320,37 +395,48 @@ export function BuilderToolbar() {
         <button
           type="button"
           onClick={() => setMode(mode === "edit" ? "preview" : "edit")}
-          className="rounded-md border border-teal-600 dark:border-teal-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-slate-800 cursor-pointer"
+          title={mode === "edit" ? "Preview app" : "Edit app"}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-bold text-teal-700 shadow-sm transition hover:border-teal-300 hover:bg-teal-100 dark:border-teal-900/50 dark:bg-teal-950/30 dark:text-teal-300 dark:hover:bg-teal-950/60 cursor-pointer"
         >
+          <ToolbarIcon name={mode === "edit" ? "preview" : "edit"} />
           {mode === "edit" ? "Preview" : "Edit"}
         </button>
         <button
           type="button"
           onClick={() => runExport("copy")}
-          className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+          title="Copy project JSON"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-350 dark:hover:bg-slate-800 cursor-pointer"
         >
+          <ToolbarIcon name="copy" />
           <span className="hidden sm:inline">Copy JSON</span>
           <span className="sm:hidden">Copy</span>
         </button>
         <button
           type="button"
           onClick={() => setIsImportDialogOpen(true)}
-          className="rounded-md bg-indigo-600 dark:bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-900/20 dark:shadow-none hover:bg-indigo-700 dark:hover:bg-indigo-600 transition cursor-pointer"
+          title="Import JSON"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-bold text-white shadow-sm shadow-indigo-900/20 transition hover:bg-indigo-700 dark:bg-indigo-500 dark:shadow-none dark:hover:bg-indigo-600 cursor-pointer"
         >
-          Import JSON
+          <ToolbarIcon name="import" />
+          <span className="hidden sm:inline">Import JSON</span>
+          <span className="sm:hidden">Import</span>
         </button>
         <button
           type="button"
           onClick={() => setIsExportDialogOpen(true)}
-          className="rounded-md bg-teal-500 dark:bg-teal-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-teal-900/20 dark:shadow-none hover:bg-teal-600 dark:hover:bg-teal-750 transition cursor-pointer"
+          title="Export app"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-500 px-3 py-2 text-sm font-bold text-white shadow-sm shadow-teal-900/20 transition hover:bg-teal-600 dark:bg-teal-600 dark:shadow-none dark:hover:bg-teal-750 cursor-pointer"
         >
+          <ToolbarIcon name="export" />
           Export
         </button>
         <button
           type="button"
           onClick={resetProject}
-          className="rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-600 dark:hover:text-rose-450 cursor-pointer"
+          title="Reset workspace"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-rose-950/20 dark:hover:text-rose-450 cursor-pointer"
         >
+          <ToolbarIcon name="reset" />
           Reset
         </button>
       </div>
@@ -358,7 +444,7 @@ export function BuilderToolbar() {
       <ImportDialog isOpen={isImportDialogOpen} onClose={() => setIsImportDialogOpen(false)} />
 
       {isExportDialogOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl text-slate-900 dark:text-slate-100 transition-colors duration-150">
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Export Project</h2>
             
