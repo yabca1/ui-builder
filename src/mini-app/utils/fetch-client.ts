@@ -105,9 +105,10 @@ export function validateField(value: any, field: SchemaField): string | null {
 /**
  * Validates a payload object against a list of SchemaFields.
  */
-export function validatePayload(payload: Record<string, any>, schema: SchemaField[]): string[] {
+export function validatePayload(payload: Record<string, any>, schema: SchemaField[] = []): string[] {
   const errors: string[] = [];
-  for (const field of schema) {
+  const fields = schema || [];
+  for (const field of fields) {
     const val = getValueByPath(payload, field.name);
     const err = validateField(val, field);
     if (err) {
@@ -120,9 +121,10 @@ export function validatePayload(payload: Record<string, any>, schema: SchemaFiel
 /**
  * Performs dynamic casting/conversion of payload values based on their schema field types
  */
-export function castPayload(payload: Record<string, any>, schema: SchemaField[]): Record<string, any> {
+export function castPayload(payload: Record<string, any>, schema: SchemaField[] = []): Record<string, any> {
   const casted: Record<string, any> = {};
-  for (const field of schema) {
+  const fields = schema || [];
+  for (const field of fields) {
     const nestedValue = getValueByPath(payload, field.name);
     const val = nestedValue !== undefined ? nestedValue : payload[field.name];
     let nextValue: any;
