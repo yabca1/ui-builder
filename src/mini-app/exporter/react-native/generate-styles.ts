@@ -1,5 +1,4 @@
 import type { MiniAppNode } from "@/mini-app/types/mini-app.types";
-import { sanitizeIdentifier } from "@/mini-app/exporter/react-native/identifiers";
 
 type StyleValue = string | number;
 type StyleObject = Record<string, StyleValue>;
@@ -8,6 +7,55 @@ export type GeneratedStyles = {
   stylesCode: string;
   styleNames: Map<string, string>;
 };
+
+function px(value: number): string {
+  return Number.isInteger(value) ? `${value}px` : `${value.toFixed(2)}px`;
+}
+
+function arbitraryValue(value: string | number, unit = "px"): string {
+  if (typeof value === "number") {
+    return `[${unit === "px" ? px(value) : `${value}${unit}`}]`;
+  }
+  return value === "100%" ? "full" : `[${value}]`;
+}
+
+function colorValue(value: string): string {
+  return value.startsWith("#") ? `[${value}]` : value;
+}
+
+function fontWeightClass(value: string): string {
+  const weights: Record<string, string> = {
+    "100": "font-thin",
+    "200": "font-extralight",
+    "300": "font-light",
+    "400": "font-normal",
+    "500": "font-medium",
+    "600": "font-semibold",
+    "700": "font-bold",
+    "800": "font-extrabold",
+    "900": "font-black",
+    normal: "font-normal",
+    bold: "font-bold",
+  };
+
+  return weights[value] ?? `font-[${value}]`;
+}
+
+function justifyClass(value: string): string {
+  const classes: Record<string, string> = {
+    "flex-start": "justify-start",
+    "flex-end": "justify-end",
+    center: "justify-center",
+    "space-between": "justify-between",
+    "space-around": "justify-around",
+  };
+
+  return classes[value] ?? `justify-[${value}]`;
+}
+
+function spacingClass(prefix: string, value: StyleValue): string {
+  return `${prefix}-${arbitraryValue(value)}`;
+}
 
 function supportedStyleEntries(style: Record<string, unknown> | undefined, node: MiniAppNode): StyleObject {
   const nodeType = node.type;
@@ -119,27 +167,51 @@ function collectNodes(nodes: MiniAppNode[]): MiniAppNode[] {
   return nodes.flatMap((node) => [node, ...collectNodes(node.children ?? [])]);
 }
 
-function renderStyleObject(style: StyleObject): string {
-  const entries = Object.entries(style);
-  if (entries.length === 0) {
-    return "{}";
+function styleObjectToClasses(style: StyleObject): string {
+  const classes: string[] = [];
+
+  for (const [key, value] of Object.entries(style)) {
+    if (key === "width") classes.push(spacingClass("w", value));
+    if (key === "height") classes.push(spacingClass("h", value));
+    if (key === "minWidth") classes.push(spacingClass("min-w", value));
+    if (key === "maxWidth") classes.push(spacingClass("max-w", value));
+    if (key === "minHeight") classes.push(spacingClass("min-h", value));
+    if (key === "maxHeight") classes.push(spacingClass("max-h", value));
+    if (key === "padding") classes.push(spacingClass("p", value));
+    if (key === "paddingTop") classes.push(spacingClass("pt", value));
+    if (key === "paddingRight") classes.push(spacingClass("pr", value));
+    if (key === "paddingBottom") classes.push(spacingClass("pb", value));
+    if (key === "paddingLeft") classes.push(spacingClass("pl", value));
+    if (key === "paddingHorizontal") classes.push(spacingClass("px", value));
+    if (key === "paddingVertical") classes.push(spacingClass("py", value));
+    if (key === "margin") classes.push(spacingClass("m", value));
+    if (key === "marginTop") classes.push(spacingClass("mt", value));
+    if (key === "marginRight") classes.push(spacingClass("mr", value));
+    if (key === "marginBottom") classes.push(spacingClass("mb", value));
+    if (key === "marginLeft") classes.push(spacingClass("ml", value));
+    if (key === "gap") classes.push(spacingClass("gap", value));
+    if (key === "opacity") classes.push(`opacity-[${value}]`);
+    if (key === "flex") classes.push(value === 1 ? "flex-1" : `flex-[${value}]`);
+    if (key === "backgroundColor" && typeof value === "string") classes.push(`bg-${colorValue(value)}`);
+    if (key === "color" && typeof value === "string") classes.push(`text-${colorValue(value)}`);
+    if (key === "fontSize") classes.push(`text-${arbitraryValue(value)}`);
+    if (key === "fontWeight" && typeof value === "string") classes.push(fontWeightClass(value));
+    if (key === "borderRadius") classes.push(`rounded-${arbitraryValue(value)}`);
+    if (key === "borderColor" && typeof value === "string") classes.push(`border border-${colorValue(value)}`);
+    if (key === "borderWidth") classes.push(value === 1 ? "border" : `border-[${value}px]`);
+    if (key === "lineHeight") classes.push(`leading-${arbitraryValue(value)}`);
+    if (key === "letterSpacing") classes.push(`tracking-${arbitraryValue(value)}`);
+    if (key === "flexDirection") classes.push(value === "row" ? "flex-row" : "flex-col");
+    if (key === "alignItems") classes.push(`items-${String(value).replace("flex-", "")}`);
+    if (key === "justifyContent") classes.push(justifyClass(String(value)));
+    if (key === "flexWrap") classes.push(value === "wrap" ? "flex-wrap" : "flex-nowrap");
   }
 
-  return `{
-${entries.map(([key, value]) => `    ${key}: ${JSON.stringify(value)},`).join("\n")}
-  }`;
+  return classes.join(" ");
 }
 
 export function generateStyles(nodes: MiniAppNode[]): GeneratedStyles {
   const styleNames = new Map<string, string>();
-  const styleEntries: string[] = [
-    `root: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "#ffffff",
-  }`,
-  ];
-  const usedNames = new Set(["root"]);
 
   for (const node of collectNodes(nodes)) {
     const style = supportedStyleEntries(node.style, node);
@@ -147,19 +219,11 @@ export function generateStyles(nodes: MiniAppNode[]): GeneratedStyles {
       continue;
     }
 
-    let styleName = sanitizeIdentifier(node.id, `${node.type}Style`);
-    if (usedNames.has(styleName)) {
-      styleName = `${styleName}${usedNames.size}`;
-    }
-    usedNames.add(styleName);
-    styleNames.set(node.id, styleName);
-    styleEntries.push(`${styleName}: ${renderStyleObject(style)}`);
+    styleNames.set(node.id, styleObjectToClasses(style));
   }
 
   return {
     styleNames,
-    stylesCode: `const styles = StyleSheet.create({
-  ${styleEntries.join(",\n\n  ")}
-});`,
+    stylesCode: "",
   };
 }
