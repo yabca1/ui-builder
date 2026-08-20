@@ -219,7 +219,7 @@ export function ProjectManager() {
                       <button
                         type="button"
                         onClick={() => setDeleteConfirmId(null)}
-                        className="rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1 text-xs font-bold text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-850 transition cursor-pointer"
+                        className="rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1 text-xs font-bold text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -236,7 +236,7 @@ export function ProjectManager() {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 dark:border-slate-850 pt-2 opacity-90 group-hover:opacity-100 transition">
+                  <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-2 opacity-90 group-hover:opacity-100 transition">
                     <button
                       type="button"
                       onClick={() => loadProject(project.id)}
@@ -256,7 +256,7 @@ export function ProjectManager() {
                         title="Duplicate project"
                         onClick={() => duplicateProject(project.id)}
                         disabled={isLoadingProject}
-                        className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition cursor-pointer"
+                        className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition cursor-pointer"
                       >
                         <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                           <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
@@ -267,7 +267,7 @@ export function ProjectManager() {
                         type="button"
                         title="Export project JSON"
                         onClick={() => handleExportProject(project)}
-                        className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition cursor-pointer"
+                        className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition cursor-pointer"
                       >
                         <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />

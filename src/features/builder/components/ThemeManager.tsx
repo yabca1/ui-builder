@@ -177,7 +177,7 @@ export function ThemeManager() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-3 rounded-xl transition-colors duration-150">
+      <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-3 rounded-xl transition-colors duration-150">
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Dark Mode Preview</span>
           <span className="text-[10px] text-slate-400 dark:text-slate-500">View canvas in dark mode</span>
@@ -198,7 +198,7 @@ export function ThemeManager() {
         </button>
       </div>
 
-      <div className="border-t border-slate-100 dark:border-slate-850 pt-4 flex-1 flex flex-col min-h-0">
+      <div className="border-t border-slate-100 dark:border-slate-800 pt-4 flex-1 flex flex-col min-h-0">
         <div className="flex border-b border-slate-200 dark:border-slate-800 mb-4 overflow-x-auto shrink-0">
           {(["colors", "typography", "spacing", "radius", "io"] as const).map((section) => (
             <button
@@ -222,7 +222,7 @@ export function ThemeManager() {
               {colorsList.map(({ key, label }) => {
                 const colorVal = activePresetTheme.colors[key as keyof typeof activePresetTheme.colors] || "#000000";
                 return (
-                  <div key={key} className="flex items-center justify-between gap-4 p-2.5 bg-slate-50/50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-850 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/40 transition duration-150">
+                  <div key={key} className="flex items-center justify-between gap-4 p-2.5 bg-slate-50/50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/40 transition duration-150">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-355">{label}</span>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono select-all uppercase">{colorVal}</span>
@@ -233,7 +233,7 @@ export function ThemeManager() {
                         value={colorVal}
                         disabled={!hasCustomTheme}
                         onChange={(e) => updateThemeColor(themeMode, key, e.target.value)}
-                        className="w-20 px-2 py-1.5 text-xs font-mono text-center uppercase border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none shadow-sm focus:border-indigo-300 dark:focus:border-indigo-750 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-950"
+                        className="w-20 px-2 py-1.5 text-xs font-mono text-center uppercase border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none shadow-sm focus:border-indigo-300 dark:focus:border-indigo-700 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-950"
                       />
                       <div className={clsx(
                         "relative flex items-center justify-center size-8 rounded-full border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden shrink-0",
@@ -277,7 +277,7 @@ export function ThemeManager() {
                 const max = key === "headingSize" ? 64 : key === "subheadingSize" ? 48 : key === "bodySize" ? 32 : 24;
                 const step = (key === "headingSize" || key === "subheadingSize") ? 2 : 1;
                 return (
-                  <div key={key} className="flex flex-col gap-1.5 p-3 bg-slate-50/50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-850 rounded-xl">
+                  <div key={key} className="flex flex-col gap-1.5 p-3 bg-slate-50/50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800 rounded-xl">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-300 capitalize">{key.replace("Size", " Size")}</span>
                       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{activePresetTheme.typography[key]}px</span>
@@ -372,7 +372,7 @@ export function ThemeManager() {
                 </button>
               </div>
 
-              <div className="border-t border-slate-100 dark:border-slate-850 pt-3.5 mt-2 flex flex-col gap-2.5">
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-3.5 mt-2 flex flex-col gap-2.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">File Backup (Optional)</span>
                 <div className="flex gap-2">
                   <button

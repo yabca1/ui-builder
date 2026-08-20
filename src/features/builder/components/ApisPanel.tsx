@@ -357,7 +357,7 @@ export function ApisPanel() {
             type="checkbox"
             checked={field.required}
             onChange={(e) => handleSchemaFieldChange(type, index, "required", e.target.checked)}
-            className="size-3.5 rounded border-slate-300 dark:border-slate-700 text-indigo-650 focus:ring-indigo-500"
+            className="size-3.5 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500"
           />
           Required
         </label>
@@ -461,7 +461,7 @@ export function ApisPanel() {
             className={`flex-1 rounded-lg py-1.5 px-3 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeSubTab === "integrations"
                 ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                : "text-slate-500 hover:text-slate-850 dark:text-slate-400 dark:hover:text-slate-200"
+                : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
             }`}
           >
             <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -476,7 +476,7 @@ export function ApisPanel() {
             className={`flex-1 rounded-lg py-1.5 px-3 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeSubTab === "credentials"
                 ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                : "text-slate-500 hover:text-slate-850 dark:text-slate-400 dark:hover:text-slate-200"
+                : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
             }`}
           >
             <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -569,7 +569,7 @@ export function ApisPanel() {
                         title="Edit Credential"
                         className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 cursor-pointer transition flex items-center justify-center"
                       >
-                        <svg className="size-4 text-slate-500 hover:text-indigo-650 dark:text-slate-400 dark:hover:text-indigo-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                        <svg className="size-4 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
                       </button>
@@ -643,7 +643,7 @@ export function ApisPanel() {
                         <button
                           type="button"
                           onClick={() => activeIntegration && handleStartEditInt(activeIntegration)}
-                          className="rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 py-2 px-3 text-xs font-semibold cursor-pointer shadow-sm transition flex items-center justify-center gap-1.5"
+                          className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 py-2 px-3 text-xs font-semibold cursor-pointer shadow-sm transition flex items-center justify-center gap-1.5"
                         >
                           <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -655,7 +655,7 @@ export function ApisPanel() {
                       <button
                         type="button"
                         onClick={() => importInputRef.current?.click()}
-                        className="rounded-xl border border-slate-200 dark:border-slate-855 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 py-2 px-3 text-xs font-semibold cursor-pointer shadow-sm transition flex items-center justify-center gap-1.5"
+                        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 py-2 px-3 text-xs font-semibold cursor-pointer shadow-sm transition flex items-center justify-center gap-1.5"
                       >
                         <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -677,7 +677,7 @@ export function ApisPanel() {
 
             {/* Editing/Creating Integration */}
             {editingIntId ? (
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-955/20 p-4 flex flex-col gap-3.5">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 p-4 flex flex-col gap-3.5">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200">
                   {editingIntId === "new" ? "Create API Integration" : "Edit API Integration"}
                 </h4>
@@ -708,7 +708,7 @@ export function ApisPanel() {
                     <select
                       value={intAuthType}
                       onChange={(e) => setIntAuthType(e.target.value as any)}
-                      className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-955 px-2.5 py-2 text-xs outline-none text-slate-900 dark:text-slate-100 focus:border-indigo-500 transition"
+                      className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 py-2 text-xs outline-none text-slate-900 dark:text-slate-100 focus:border-indigo-500 transition"
                     >
                       <option value="none">None</option>
                       <option value="apiKey">API Key (Header)</option>
@@ -721,7 +721,7 @@ export function ApisPanel() {
                     <select
                       value={intLogging}
                       onChange={(e) => setIntLogging(e.target.value as any)}
-                      className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-955 px-2.5 py-2 text-xs outline-none text-slate-900 dark:text-slate-100 focus:border-indigo-500 transition"
+                      className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 py-2 text-xs outline-none text-slate-900 dark:text-slate-100 focus:border-indigo-500 transition"
                     >
                       <option value="off">Off</option>
                       <option value="basic">Basic</option>
@@ -731,7 +731,7 @@ export function ApisPanel() {
                 </div>
 
                 {intAuthType !== "none" && (
-                  <div className="flex flex-col gap-3 bg-white dark:bg-slate-950/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-850">
+                  <div className="flex flex-col gap-3 bg-white dark:bg-slate-950/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
                     <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
                       Link Credential
                       {credentials.length === 0 ? (
@@ -772,7 +772,7 @@ export function ApisPanel() {
                     <button
                       type="button"
                       onClick={handleAddHeaderRow}
-                      className="text-xs font-bold text-indigo-650 hover:text-indigo-700 cursor-pointer"
+                      className="text-xs font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
                     >
                       + Add Header
                     </button>
@@ -815,7 +815,7 @@ export function ApisPanel() {
                   <button
                     type="button"
                     onClick={() => setEditingIntId(null)}
-                    className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 px-3.5 py-2 text-xs font-semibold cursor-pointer transition duration-150"
+                    className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 px-3.5 py-2 text-xs font-semibold cursor-pointer transition duration-150"
                   >
                     Cancel
                   </button>
@@ -860,8 +860,8 @@ export function ApisPanel() {
                           onClick={() => { setSelectedPathId(p.id); setTestResult(null); }}
                           className={`flex items-center justify-between border rounded-xl p-3 text-left transition duration-150 select-none ${
                             selectedPathId === p.id
-                              ? "border-indigo-500 dark:border-indigo-650 bg-indigo-50/5 dark:bg-indigo-950/10 shadow-sm"
-                              : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-slate-350 dark:hover:border-slate-700"
+                              ? "border-indigo-500 dark:border-indigo-600 bg-indigo-50/5 dark:bg-indigo-950/10 shadow-sm"
+                              : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-slate-300 dark:hover:border-slate-700"
                           }`}
                         >
                           <div className="flex flex-col min-w-0 mr-2">
@@ -869,10 +869,10 @@ export function ApisPanel() {
                             <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1.5 font-mono truncate">
                               <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border select-none ${
                                 p.method === "GET"
-                                  ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-450 border-emerald-200/50 dark:border-emerald-900/30"
+                                  ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/30"
                                   : p.method === "POST"
-                                  ? "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-450 border-blue-200/50 dark:border-blue-900/30"
-                                  : "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-450 border-amber-200/50 dark:border-amber-900/30"
+                                  ? "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-900/30"
+                                  : "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200/50 dark:border-amber-900/30"
                               }`}>{p.method}</span>
                               {p.path}
                             </span>
@@ -886,7 +886,7 @@ export function ApisPanel() {
 
                 {/* Path Editing Form */}
                 {editingPathId ? (
-                  <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-955/20 p-4 flex flex-col gap-3.5">
+                  <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 p-4 flex flex-col gap-3.5">
                     <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200">
                       {editingPathId === "new" ? "New API Path" : "Edit API Path"}
                     </h4>
@@ -907,7 +907,7 @@ export function ApisPanel() {
                         <select
                           value={pathMethod}
                           onChange={(e) => setPathMethod(e.target.value as any)}
-                          className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-955 px-2.5 py-2 text-xs outline-none text-slate-900 dark:text-slate-100 focus:border-indigo-500 transition"
+                          className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 py-2 text-xs outline-none text-slate-900 dark:text-slate-100 focus:border-indigo-500 transition"
                         >
                           <option value="GET">GET</option>
                           <option value="POST">POST</option>
@@ -933,20 +933,20 @@ export function ApisPanel() {
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col min-w-0 mr-2">
                           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Request Schema / Parameters</span>
-                          <span className="text-[10px] text-slate-450 font-medium">
+                          <span className="text-[10px] text-slate-400 font-medium">
                             {methodHasBody ? "Fields become JSON body keys. Dotted names create nested objects." : "Fields are used as path/query parameters."}
                           </span>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleAddSchemaField("request")}
-                          className="rounded-xl bg-slate-905 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 px-2.5 py-1.5 text-[11px] font-bold cursor-pointer transition shadow-sm"
+                          className="rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 px-2.5 py-1.5 text-[11px] font-bold cursor-pointer transition shadow-sm"
                         >
                           + Field
                         </button>
                       </div>
                       {pathRequestSchema.length === 0 ? (
-                        <div className="text-center py-4 text-xs text-slate-400 font-semibold bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-850">No request fields defined.</div>
+                        <div className="text-center py-4 text-xs text-slate-400 font-semibold bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">No request fields defined.</div>
                       ) : (
                         <div className="flex flex-col gap-2">
                           {pathRequestSchema.map((field, index) => renderSchemaFieldEditor(field, index, "request"))}
@@ -961,13 +961,13 @@ export function ApisPanel() {
                         <span className="text-[10px] text-slate-400 font-semibold italic">Manual editing disabled</span>
                       </div>
                       {pathResponseSchema.length === 0 ? (
-                        <div className="text-center py-4 text-xs text-slate-400 font-semibold bg-white dark:bg-slate-955 rounded-xl border border-slate-200 dark:border-slate-850">No response fields defined. Run "Test API" to infer automatically.</div>
+                        <div className="text-center py-4 text-xs text-slate-400 font-semibold bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">No response fields defined. Run "Test API" to infer automatically.</div>
                       ) : (
                         <div className="flex flex-col gap-2">
                           {pathResponseSchema.map((field) => (
                             <div key={field.name} className="flex justify-between items-center bg-white dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs shadow-sm">
                               <span className="font-bold text-slate-800 dark:text-slate-200">{field.name}</span>
-                              <span className="text-slate-450 font-mono text-[10px] bg-slate-100 dark:bg-slate-900 py-0.5 px-1.5 rounded-md">({field.type})</span>
+                              <span className="text-slate-400 font-mono text-[10px] bg-slate-100 dark:bg-slate-900 py-0.5 px-1.5 rounded-md">({field.type})</span>
                             </div>
                           ))}
                         </div>
@@ -979,7 +979,7 @@ export function ApisPanel() {
                         <button
                           type="button"
                           onClick={() => { deleteApiPath(editingPathId); setEditingPathId(null); setSelectedPathId(null); }}
-                          className="mr-auto rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 dark:bg-rose-955/25 dark:border-rose-900/30 dark:text-rose-450 px-3.5 py-2 text-xs font-semibold cursor-pointer transition duration-150"
+                          className="mr-auto rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 dark:bg-rose-950/25 dark:border-rose-900/30 dark:text-rose-400 px-3.5 py-2 text-xs font-semibold cursor-pointer transition duration-150"
                         >
                           Delete
                         </button>
@@ -987,7 +987,7 @@ export function ApisPanel() {
                       <button
                         type="button"
                         onClick={() => setEditingPathId(null)}
-                        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-705 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-805 px-3.5 py-2 text-xs font-semibold cursor-pointer transition duration-150"
+                        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 px-3.5 py-2 text-xs font-semibold cursor-pointer transition duration-150"
                       >
                         Cancel
                       </button>
@@ -1006,21 +1006,21 @@ export function ApisPanel() {
                 {selectedPathId && !editingPathId && activePath && (
                   <div className="flex flex-col gap-4 border-t border-slate-150 dark:border-slate-800 pt-4.5">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">Test API Console</h4>
+                      <h4 className="text-xs font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">Test Request</h4>
                       <button
                         type="button"
                         onClick={() => handleStartEditPath(activePath)}
-                        className="text-xs font-bold text-indigo-650 hover:text-indigo-700 cursor-pointer transition"
+                        className="text-xs font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer transition"
                       >
                         Edit Schema/Path
                       </button>
                     </div>
 
                     {/* Inputs */}
-                    <div className="flex flex-col gap-3.5 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl p-4 border border-slate-200 dark:border-slate-800">
+                    <div className="flex flex-col gap-3.5 bg-slate-50/50 dark:bg-slate-900/20 rounded-2xl p-4 border border-slate-200 dark:border-slate-800">
                       <span className="text-[10px] font-bold text-slate-400 select-none uppercase tracking-wider">API Request Parameters</span>
-                      {activePath.requestSchema?.length === 0 ? (
-                        <div className="text-xs text-slate-450 font-semibold py-2 text-center bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-850 shadow-sm">No request parameters defined. You can trigger directly.</div>
+                      {!activePath.requestSchema || activePath.requestSchema.length === 0 ? (
+                        <div className="text-xs text-slate-400 font-semibold py-2 text-center bg-white dark:bg-slate-955 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">No request parameters defined. You can trigger directly.</div>
                       ) : (
                         activePath.requestSchema.map((field) => {
                           const value = testParams[field.name] ?? field.defaultValue ?? "";
@@ -1031,7 +1031,7 @@ export function ApisPanel() {
                               <span>
                                 {field.name}
                                 {field.required && <span className="text-rose-500 font-black ml-0.5">*</span>}
-                                <span className="ml-1 font-mono text-[10px] text-slate-450 font-normal">({field.type})</span>
+                                <span className="ml-1 font-mono text-[10px] text-slate-400 font-normal">({field.type})</span>
                               </span>
                               {field.type === "boolean" ? (
                                 <select
@@ -1063,12 +1063,11 @@ export function ApisPanel() {
                           );
                         })
                       )}
-
                       <button
                         type="button"
                         onClick={handleTestApi}
                         disabled={isTesting}
-                        className="rounded-xl bg-indigo-650 hover:bg-indigo-750 disabled:bg-indigo-400 text-white py-2.5 text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1.5 shadow-sm mt-1"
+                        className="rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white py-2.5 text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1.5 shadow-sm mt-1"
                       >
                         {isTesting ? "Executing Request..." : "Test API Operation"}
                       </button>
@@ -1076,13 +1075,13 @@ export function ApisPanel() {
 
                     {/* Output */}
                     {testResult && (
-                      <div className="flex flex-col gap-3.5 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-slate-955 shadow-sm">
+                      <div className="flex flex-col gap-3.5 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-slate-950 shadow-sm">
                         <div className="flex items-center justify-between text-xs font-bold">
                           <span className="text-slate-400">Response Console</span>
                           <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border uppercase select-none ${
                             testResult.success 
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-250 dark:bg-emerald-950/20 dark:border-emerald-900/40" 
-                              : "bg-rose-50 text-rose-700 border-rose-250 dark:bg-rose-950/20 dark:border-rose-900/40"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/40" 
+                              : "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/40"
                           }`}>
                             Status: {testResult.status} {testResult.success ? "OK" : "FAILED"}
                           </span>
@@ -1098,13 +1097,13 @@ export function ApisPanel() {
                           </button>
                         )}
                         {testResult.duration !== undefined && (
-                          <div className="text-[10px] text-slate-450 font-semibold select-none">
-                            Duration: <span className="font-bold text-slate-700 dark:text-slate-350">{testResult.duration}ms</span>
+                          <div className="text-[10px] text-slate-400 font-semibold select-none">
+                            Duration: <span className="font-bold text-slate-700 dark:text-slate-300">{testResult.duration}ms</span>
                           </div>
                         )}
 
                         {testResult.validationErrors && testResult.validationErrors.length > 0 && (
-                          <div className="rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 p-3 text-[11px] text-rose-650 dark:text-rose-400">
+                          <div className="rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 p-3 text-[11px] text-rose-600 dark:text-rose-400">
                             <span className="font-bold block mb-1">Validation Errors:</span>
                             <ul className="list-disc pl-4.5 space-y-0.5">
                               {testResult.validationErrors.map((err: string, i: number) => (
@@ -1129,7 +1128,7 @@ export function ApisPanel() {
                         )}
 
                         {testResult.logs && testResult.logs.length > 0 && (
-                          <div className="border-t border-slate-100 dark:border-slate-850 pt-3 flex flex-col gap-1.5">
+                          <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex flex-col gap-1.5">
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Internal Trace Logs</span>
                             <pre className="text-[10px] text-slate-450 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 p-2.5 rounded-xl overflow-x-auto font-mono whitespace-pre-wrap select-text leading-relaxed">
                               {testResult.logs.join("\n")}

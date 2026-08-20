@@ -406,7 +406,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
           <button
             type="button"
             onClick={handleLoadExample}
-            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold transition cursor-pointer"
+            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold transition cursor-pointer"
           >
             Load Example
           </button>
@@ -424,7 +424,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
           </div>
         </div>
 
-        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-3.5 rounded-xl mt-4">
+        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3.5 rounded-xl mt-4">
           <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Import Mode</h4>
           <div className="flex gap-4">
             <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer select-none">

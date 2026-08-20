@@ -187,7 +187,7 @@ function ToolRail({ activeTab, setActiveTab }: ToolRailProps) {
             onClick={() => setActiveTab(tab.id)}
             className={`relative flex size-[54px] xl:size-14 shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl transition-all duration-200 ease-out hover:scale-[1.04] active:scale-[0.96] cursor-pointer ${
               isActive
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-650/20 dark:bg-indigo-500 dark:shadow-indigo-500/10"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 dark:bg-indigo-500 dark:shadow-indigo-500/10"
                 : "text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
             }`}
             aria-label={tab.label}
@@ -252,7 +252,7 @@ function AppSettingsPanel() {
         </select>
       </label>
 
-      <div className="border-t border-slate-200 dark:border-slate-850 pt-4 mt-2">
+      <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-2">
         <button
           type="button"
           onClick={resetProject}

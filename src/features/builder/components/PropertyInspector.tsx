@@ -40,7 +40,7 @@ function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
       <select
         {...props}
         className={clsx(
-          "w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-955 pl-3.5 pr-10 py-2.5 text-xs text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm hover:border-slate-350 dark:hover:border-slate-700",
+          "w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900 pl-3.5 pr-10 py-2.5 text-xs text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm hover:border-slate-350 dark:hover:border-slate-700",
           props.className
         )}
       />
@@ -58,7 +58,7 @@ function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     <textarea
       {...props}
       className={clsx(
-        "rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-955 px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-500 shadow-sm hover:border-slate-350 dark:hover:border-slate-700 resize-y",
+        "rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900 px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-500 shadow-sm hover:border-slate-350 dark:hover:border-slate-700 resize-y",
         props.className
       )}
     />
@@ -86,7 +86,7 @@ function SegmentedControl<T extends string>({
             className={clsx(
               "flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition select-none cursor-pointer",
               isActive
-                ? "bg-white dark:bg-slate-900 text-slate-850 dark:text-slate-100 shadow-sm"
+                ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm"
                 : "text-slate-450 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250"
             )}
           >
@@ -113,7 +113,7 @@ function ColorField({ value, onChange }: { value: string; onChange: (val: string
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/45 dark:bg-slate-955 px-3 py-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-500 shadow-sm hover:border-slate-350 dark:hover:border-slate-700"
+        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/45 dark:bg-slate-900 px-3 py-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-indigo-500 shadow-sm hover:border-slate-350 dark:hover:border-slate-700"
         placeholder="#000000"
       />
     </div>
@@ -433,7 +433,7 @@ function SpacingControl({
 
 function InspectorSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border-b border-slate-100 dark:border-slate-850/80 py-4 flex flex-col gap-3">
+    <div className="border-b border-slate-100 dark:border-slate-800/80 py-4 flex flex-col gap-3">
       <div className="flex items-center gap-1.5 select-none">
         <span className="size-1.5 rounded-full bg-indigo-500/80"></span>
         <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-450 dark:text-slate-500">
@@ -563,7 +563,7 @@ function ActionSelector({
       )}
 
       {action?.type === "invokeApi" && (
-        <div className="flex flex-col gap-3 bg-white dark:bg-slate-950 p-2.5 rounded-md border border-slate-200 dark:border-slate-855">
+        <div className="flex flex-col gap-3 bg-white dark:bg-slate-950 p-2.5 rounded-md border border-slate-200 dark:border-slate-800">
           {integrations.length === 0 ? (
             <div className="rounded-lg border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
               Add or import an API from the APIs tab first.
@@ -658,7 +658,7 @@ function ActionSelector({
                           placeholder={currentMapping.sourceType === "static" ? "Static value" : "Variable name"}
                           value={currentMapping.sourceValue}
                           onChange={(e) => updateMapping({ sourceValue: e.target.value })}
-                          className="flex-1 rounded border border-slate-200 dark:border-slate-855 bg-white dark:bg-slate-950 px-2 py-0.5 text-xs outline-none text-slate-900 dark:text-slate-100"
+                          className="flex-1 rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-0.5 text-xs outline-none text-slate-900 dark:text-slate-100"
                         />
                       )}
                     </div>
@@ -693,7 +693,7 @@ function ActionSelector({
                       list[idx].responsePath = e.target.value;
                       onChange({ ...action, responseMappings: list });
                     }}
-                    className="flex-1 rounded border border-slate-200 dark:border-slate-855 bg-slate-50 dark:bg-slate-900 px-2 py-1 text-[11px] outline-none text-slate-900 dark:text-slate-100"
+                    className="flex-1 rounded border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-2 py-1 text-[11px] outline-none text-slate-900 dark:text-slate-100"
                   />
                   <span className="text-[10px] text-slate-400">&rarr;</span>
                   <input
@@ -704,7 +704,7 @@ function ActionSelector({
                       list[idx].targetVariable = e.target.value;
                       onChange({ ...action, responseMappings: list });
                     }}
-                    className="flex-1 rounded border border-slate-200 dark:border-slate-855 bg-slate-50 dark:bg-slate-900 px-2 py-1 text-[11px] outline-none text-slate-900 dark:text-slate-100"
+                    className="flex-1 rounded border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-2 py-1 text-[11px] outline-none text-slate-900 dark:text-slate-100"
                   />
                   <button
                     type="button"
