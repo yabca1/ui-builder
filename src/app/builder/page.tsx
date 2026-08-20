@@ -185,17 +185,17 @@ function ToolRail({ activeTab, setActiveTab }: ToolRailProps) {
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`relative flex size-[52px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl transition ${
+            className={`relative flex size-[54px] xl:size-14 shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl transition-all duration-200 ease-out hover:scale-[1.04] active:scale-[0.96] cursor-pointer ${
               isActive
-                ? "bg-teal-600 text-white shadow-lg shadow-teal-900/20"
-                : "text-slate-500 hover:bg-white hover:text-teal-700 hover:shadow-sm dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-teal-400"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-650/20 dark:bg-indigo-500 dark:shadow-indigo-500/10"
+                : "text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
             }`}
             aria-label={tab.label}
             title={tab.label}
           >
             {isActive && <span className="absolute left-1 top-1/2 hidden h-6 w-1 -translate-y-1/2 rounded-full bg-white/90 xl:block" />}
             {tab.icon}
-            <span className="text-[9px] font-bold leading-none">{tab.label}</span>
+            <span className="text-[9px] font-extrabold tracking-wide uppercase leading-none">{tab.label}</span>
           </button>
         );
       })}
