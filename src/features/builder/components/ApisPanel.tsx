@@ -1067,7 +1067,7 @@ export function ApisPanel() {
                         type="button"
                         onClick={handleTestApi}
                         disabled={isTesting}
-                        className="rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white py-2.5 text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1.5 shadow-sm mt-1"
+                        className="rounded-xl bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 text-white py-2.5 text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1.5 shadow-sm mt-1"
                       >
                         {isTesting ? "Executing Request..." : "Test API Operation"}
                       </button>
