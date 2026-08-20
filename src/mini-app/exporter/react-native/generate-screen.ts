@@ -1,20 +1,72 @@
-import type { ScreenDefinition, ExportTarget, MiniAppNode } from "@/mini-app/types/mini-app.types";
-import { generateNode } from "@/mini-app/exporter/react-native/generate-node";
+import type { ScreenDefinition, ExportTarget, MiniAppNode, MiniAppAction } from "@/mini-app/types/mini-app.types";
+import { generateNode, generateAction, stateIdentifier, stateRoot } from "@/mini-app/exporter/react-native/generate-node";
 import { generateStyles } from "@/mini-app/exporter/react-native/generate-styles";
 import { ImportCollector } from "@/mini-app/exporter/react-native/imports";
-import { routeName, screenComponentName } from "@/mini-app/exporter/react-native/identifiers";
+import { screenComponentName } from "@/mini-app/exporter/react-native/identifiers";
+import { setValueByPath } from "@/mini-app/utils/path-utils";
 
-function collectSetVariableActions(nodes: MiniAppNode[]): { variable: string; value: unknown }[] {
-  const actions: { variable: string; value: unknown }[] = [];
-  const visit = (node: MiniAppNode) => {
-    const onPress = node.events?.onPress;
-    if (onPress && onPress.type === "setVariable") {
-      actions.push({ variable: onPress.variable, value: onPress.value });
+function collectScreenVariables(nodes: MiniAppNode[], onLoadAction?: MiniAppAction): { variable: string; defaultValue: any }[] {
+  const varsMap = new Map<string, any>();
+
+  const ensureVariable = (path: string, defaultValue: any) => {
+    const root = stateRoot(path);
+    if (!varsMap.has(root)) {
+      varsMap.set(root, path.includes(".") ? {} : defaultValue);
     }
-    node.children?.forEach(visit);
+    if (path.includes(".")) {
+      const current = varsMap.get(root) ?? {};
+      setValueByPath(current, path.split(".").slice(1).join("."), defaultValue);
+      varsMap.set(root, current);
+    }
   };
-  nodes.forEach(visit);
-  return actions;
+
+  const visitAction = (action?: MiniAppAction) => {
+    if (!action) return;
+    if (action.type === "setVariable") {
+      ensureVariable(action.variable, action.value);
+    } else if (action.type === "invokeApi") {
+      ensureVariable(`api.${action.pathId}.status`, "idle");
+      ensureVariable(`api.${action.pathId}.error`, null);
+      ensureVariable(`api.${action.pathId}.statusCode`, null);
+      if (action.responseMappings) {
+        for (const mapping of action.responseMappings) {
+          ensureVariable(mapping.targetVariable, "");
+        }
+      }
+      visitAction(action.onLoading);
+      visitAction(action.onLoaded);
+      visitAction(action.onEmpty);
+      visitAction(action.onError);
+    }
+  };
+
+  const visitNode = (node: MiniAppNode) => {
+    if ((node.type === "input" || node.type === "textarea") && typeof node.props.variableName === "string") {
+      ensureVariable(node.props.variableName, node.props.defaultValue ?? "");
+    }
+    const onPress = node.events?.onPress;
+    visitAction(onPress);
+    node.children?.forEach(visitNode);
+  };
+
+  nodes.forEach(visitNode);
+  visitAction(onLoadAction);
+
+  return Array.from(varsMap.entries()).map(([variable, defaultValue]) => ({
+    variable: stateIdentifier(variable),
+    defaultValue,
+  }));
+}
+
+function hasNavigationAction(nodes: MiniAppNode[]): boolean {
+  const visit = (node: MiniAppNode): boolean => {
+    const action = node.events?.onPress;
+    if (action && (action.type === "navigate" || action.type === "goBack")) {
+      return true;
+    }
+    return (node.children ?? []).some(visit);
+  };
+  return nodes.some(visit);
 }
 
 export function generateScreen(
@@ -23,68 +75,55 @@ export function generateScreen(
   target: ExportTarget = "react-native-cli",
 ): string {
   const imports = new ImportCollector();
-  imports.addReactNative("StyleSheet");
-  const rootComponent = screen.nodes.length >= 2 ? "ScrollView" : "View";
-  imports.addReactNative(rootComponent);
-
   const generatedStyles = generateStyles(screen.nodes);
+
   const children = screen.nodes
     .map((node) =>
       generateNode(node, {
         imports,
-        styleNames: generatedStyles.styleNames,
         screens,
         target,
+        styleNames: generatedStyles.styleNames,
       }),
     )
     .join("\n");
 
-  const variables = collectSetVariableActions(screen.nodes);
-  const uniqueVars = Array.from(new Set(variables.map((v) => v.variable)));
+  const uniqueVars = collectScreenVariables(screen.nodes, screen.events?.onLoad);
   const stateHooks = uniqueVars
-    .map((v) => {
-      const action = variables.find((act) => act.variable === v);
-      const initialValue = action ? action.value : "";
-      return `  const [${v}, set${v.charAt(0).toUpperCase() + v.slice(1)}] = React.useState(${JSON.stringify(initialValue)});`;
+    .map(({ variable, defaultValue }) => {
+      return `  const [${variable}, set${variable.charAt(0).toUpperCase() + variable.slice(1)}] = React.useState(${JSON.stringify(defaultValue)});`;
     })
     .join("\n");
 
   const hooksBlock = stateHooks ? `\n${stateHooks}\n` : "";
 
-  if (target === "expo-standalone") {
-    return `import React from "react";
-${imports.renderReactNativeImport()}
+  let screenLoadEffect = "";
+  /* if (screen.events?.onLoad) {
+    const actionCode = generateAction(screen.events.onLoad, screens, target, imports);
+    screenLoadEffect = `\n  React.useEffect(() => {\n    (${actionCode})();\n  }, []);\n`;
+  } */
 
-export default function ${screenComponentName(screen.name)}() {${hooksBlock}  return (
-    <${rootComponent}${rootComponent === "ScrollView" ? ` {...(() => { const { alignItems, justifyContent, ...style } = StyleSheet.flatten(styles.root); const hasAlign = alignItems !== undefined || justifyContent !== undefined; return { style, contentContainerStyle: { alignItems, justifyContent, ...(hasAlign ? { flexGrow: 1 } : {}) } }; })()}` : " style={styles.root}"}>
-      ${children}
-    </${rootComponent}>
-  );
-}
-
-${generatedStyles.stylesCode}
-`;
+  let navHook = "";
+  if (hasNavigationAction(screen.nodes)) {
+    imports.add("@react-navigation/native", "useNavigation");
+    navHook = "\n  const navigation = useNavigation<any>();\n";
   }
+
+  imports.addReactNative("SafeAreaView");
+
+  const componentImports = Array.from(imports.getUiComponents()).sort();
+  const componentImportStr = componentImports.length > 0
+    ? `import { ${componentImports.join(", ")} } from "../components";\n`
+    : "";
 
   return `import React from "react";
 ${imports.renderReactNativeImport()}
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { MiniAppStackParamList } from "../navigation/MiniAppNavigator";
-
-type ${screenComponentName(screen.name)}Props = NativeStackScreenProps<
-  MiniAppStackParamList,
-  ${JSON.stringify(routeName(screen.name))}
->;
-
-export function ${screenComponentName(screen.name)}({
-  navigation,
-}: ${screenComponentName(screen.name)}Props) {${hooksBlock}  return (
-    <${rootComponent}${rootComponent === "ScrollView" ? ` {...(() => { const { alignItems, justifyContent, ...style } = StyleSheet.flatten(styles.root); const hasAlign = alignItems !== undefined || justifyContent !== undefined; return { style, contentContainerStyle: { alignItems, justifyContent, ...(hasAlign ? { flexGrow: 1 } : {}) } }; })()}` : " style={styles.root}"}>
+${componentImportStr}
+export default function ${screenComponentName(screen.name)}() {${hooksBlock}${navHook}${screenLoadEffect}  return (
+    <SafeAreaView className="flex-1 bg-white">
       ${children}
-    </${rootComponent}>
+    </SafeAreaView>
   );
 }
-
-${generatedStyles.stylesCode}
 `;
 }
