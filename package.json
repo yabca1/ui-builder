@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "test": "vitest run",
+    "test:api": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/api-console-test.mjs",
     "start": "next start",
     "lint": "next lint"
   },

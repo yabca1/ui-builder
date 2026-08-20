@@ -63,6 +63,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
       screens: validatedProject.screens || [],
       version: validatedProject.version || "1.0.0",
       ownerId: validatedProject.ownerId !== undefined ? validatedProject.ownerId : null,
+      credentials: validatedProject.credentials || [],
+      integrations: validatedProject.integrations || [],
+      apiPaths: validatedProject.apiPaths || [],
       createdAt,
       updatedAt: now,
     };

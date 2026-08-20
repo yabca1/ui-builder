@@ -12,6 +12,7 @@ import { ScreenManager } from "@/features/builder/components/ScreenManager";
 import { ThemeManager } from "@/features/builder/components/ThemeManager";
 import { ProjectManager } from "@/features/builder/components/ProjectManager";
 import { AutosaveManager } from "@/features/builder/components/AutosaveManager";
+import { ApisPanel } from "@/features/builder/components/ApisPanel";
 import { useActiveScreen, useBuilderStore } from "@/features/builder/store/builder.store";
 import { findNode, findParentAndIndex, canInsertNode } from "@/features/builder/utils/node-tree";
 import { componentRegistry } from "@/mini-app/registry/component-registry";
@@ -87,7 +88,7 @@ function PreviewPanel() {
   );
 }
 
-type TabType = "projects" | "components" | "screens" | "theme" | "settings" | "help";
+type TabType = "projects" | "components" | "screens" | "apis" | "theme" | "settings" | "help";
 
 type ToolRailProps = {
   activeTab: TabType;
@@ -131,6 +132,16 @@ function ToolRail({ activeTab, setActiveTab }: ToolRailProps) {
       ),
     },
     {
+      id: "apis" as TabType,
+      label: "APIs",
+      icon: (
+        <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+      ),
+    },
+    {
       id: "theme" as TabType,
       label: "Theme",
       icon: (
@@ -163,9 +174,9 @@ function ToolRail({ activeTab, setActiveTab }: ToolRailProps) {
   ];
 
   return (
-    <nav className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 px-2 py-2 xl:w-16 xl:flex-col xl:border-r xl:border-b-0 xl:px-0 xl:py-4 select-none transition-colors duration-200">
-      <div className="mb-0 grid size-10 shrink-0 place-items-center rounded-xl bg-teal-600 text-base font-black text-white shadow-sm xl:mb-6">
-        RN
+    <nav className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-slate-200/80 bg-white/70 px-2 py-2 shadow-sm shadow-slate-900/5 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 xl:w-[72px] xl:flex-col xl:border-r xl:border-b-0 xl:px-0 xl:py-4 select-none transition-colors duration-200">
+      <div className="mb-0 grid size-11 shrink-0 place-items-center rounded-2xl bg-slate-950 text-[11px] font-black tracking-tight text-white shadow-lg shadow-slate-950/15 ring-1 ring-white/20 dark:bg-white dark:text-slate-950 xl:mb-6">
+        UI
       </div>
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
@@ -174,16 +185,17 @@ function ToolRail({ activeTab, setActiveTab }: ToolRailProps) {
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`flex flex-col items-center justify-center size-12 shrink-0 rounded-xl transition gap-1 ${
+            className={`relative flex size-[52px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl transition ${
               isActive
-                ? "bg-teal-600 text-white shadow-md shadow-teal-900/10"
-                : "text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-teal-700 dark:hover:text-teal-400"
+                ? "bg-teal-600 text-white shadow-lg shadow-teal-900/20"
+                : "text-slate-500 hover:bg-white hover:text-teal-700 hover:shadow-sm dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-teal-400"
             }`}
             aria-label={tab.label}
             title={tab.label}
           >
+            {isActive && <span className="absolute left-1 top-1/2 hidden h-6 w-1 -translate-y-1/2 rounded-full bg-white/90 xl:block" />}
             {tab.icon}
-            <span className="text-[9px] font-medium leading-none">{tab.label}</span>
+            <span className="text-[9px] font-bold leading-none">{tab.label}</span>
           </button>
         );
       })}
@@ -401,6 +413,9 @@ function BuilderContent() {
               <div className="p-4 overflow-y-auto h-full flex flex-col min-h-0">
                 <ScreenManager />
               </div>
+            )}
+            {activeTab === "apis" && (
+              <ApisPanel />
             )}
             {activeTab === "theme" && <ThemeManager />}
             {activeTab === "settings" && (

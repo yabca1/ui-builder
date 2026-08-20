@@ -44,6 +44,9 @@ export async function POST(request: Request) {
     const theme = body.theme || {};
     const version = body.version || "1.0.0";
     const ownerId = body.ownerId !== undefined ? body.ownerId : null;
+    const credentials = body.credentials || [];
+    const integrations = body.integrations || [];
+    const apiPaths = body.apiPaths || [];
 
     const projectData = {
       id,
@@ -54,6 +57,9 @@ export async function POST(request: Request) {
       theme,
       version,
       ownerId,
+      credentials,
+      integrations,
+      apiPaths,
     };
 
     // Validate and normalize
@@ -79,6 +85,9 @@ export async function POST(request: Request) {
       screens: validatedProject.screens,
       version: validatedProject.version,
       ownerId: validatedProject.ownerId !== undefined ? validatedProject.ownerId : null,
+      credentials: validatedProject.credentials || [],
+      integrations: validatedProject.integrations || [],
+      apiPaths: validatedProject.apiPaths || [],
       createdAt: now,
       updatedAt: now,
     };
