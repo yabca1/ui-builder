@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { clsx } from "clsx";
 import { useBuilderStore } from "@/features/builder/store/builder.store";
 import { validateImportJson } from "@/mini-app/schema/mini-app.validator";
-import type { MiniApp, ScreenDefinition } from "@/mini-app/types/mini-app.types";
+import type { MiniApp, MiniAppNode, ScreenDefinition } from "@/mini-app/types/mini-app.types";
 import { defaultRadius, defaultShadows, defaultSpacing, defaultTypography } from "@/mini-app/registry/theme-presets";
 
 type ImportDialogProps = {
@@ -27,7 +28,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
   const importComponents = useBuilderStore((state) => state.importComponents);
   const currentProject = useBuilderStore((state) => state.miniApp);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
   const handleLoadExample = () => {
     const example = {
@@ -350,9 +351,9 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl flex flex-col max-h-[85vh] text-slate-900 dark:text-slate-100">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-start justify-center overflow-y-auto bg-slate-900/60 px-3 py-6 backdrop-blur-sm animate-fade-in sm:items-center sm:p-4">
+      <div className="flex max-h-[calc(100dvh-2rem)] min-h-0 w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
           <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Import JSON Definition</h2>
           <button
@@ -489,6 +490,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
