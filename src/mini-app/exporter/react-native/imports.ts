@@ -1,6 +1,7 @@
 export class ImportCollector {
   private readonly reactNativeImports = new Set<string>();
   private readonly genericImports = new Map<string, Set<string>>();
+  private readonly uiComponentImports = new Set<string>();
 
   addReactNative(name: string) {
     this.reactNativeImports.add(name);
@@ -8,6 +9,14 @@ export class ImportCollector {
 
   hasReactNative(name: string) {
     return this.reactNativeImports.has(name);
+  }
+
+  addUiComponent(name: string) {
+    this.uiComponentImports.add(name);
+  }
+
+  getUiComponents() {
+    return this.uiComponentImports;
   }
 
   add(module: string, name: string) {
@@ -32,3 +41,4 @@ export class ImportCollector {
     return imports.trim();
   }
 }
+
