@@ -182,6 +182,22 @@ export function normalizeImportedData(parsed: any, type: "project" | "screen") {
   if (!parsed || typeof parsed !== "object") return;
 
   if (type === "project") {
+    if (parsed.manifest && typeof parsed.manifest === "object") {
+      if (parsed.id === undefined && parsed.manifest.id !== undefined) {
+        parsed.id = parsed.manifest.id;
+      }
+      if (parsed.name === undefined && parsed.manifest.name !== undefined) {
+        parsed.name = parsed.manifest.name;
+      }
+      if (parsed.version === undefined && parsed.manifest.version !== undefined) {
+        parsed.version = parsed.manifest.version;
+      }
+      if (parsed.entryScreenId === undefined && parsed.manifest.entryScreenId !== undefined) {
+        parsed.entryScreenId = parsed.manifest.entryScreenId;
+      }
+      delete parsed.manifest;
+    }
+
     parsed.id = parsed.id || slugify(parsed.name || "app") || generateRandomId();
     parsed.version = parsed.version || "1.0.0";
 
@@ -201,6 +217,10 @@ export function normalizeImportedData(parsed: any, type: "project" | "screen") {
         dark: mergeMode("dark"),
       };
     }
+
+    parsed.credentials = Array.isArray(parsed.credentials) ? parsed.credentials : [];
+    parsed.integrations = Array.isArray(parsed.integrations) ? parsed.integrations : [];
+    parsed.apiPaths = Array.isArray(parsed.apiPaths) ? parsed.apiPaths : [];
 
     if (Array.isArray(parsed.screens)) {
       parsed.screens.forEach((screen: any) => {
