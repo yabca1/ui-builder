@@ -4,19 +4,26 @@ import { useMemo, useState, useEffect, createContext, useContext } from "react";
 import type { MiniApp, MiniAppAction, MiniAppNode } from "@/mini-app/types/mini-app.types";
 import { clsx } from "clsx";
 import { resolveNodeTheme, themePresets } from "@/mini-app/registry/theme-presets";
+import { invokeFetchClient } from "@/mini-app/utils/fetch-client";
+import { getValueByPath, setValueByPath } from "@/mini-app/utils/path-utils";
 
 const StateVariablesContext = createContext<Record<string, any>>({});
+const StateVariablesSetterContext = createContext<React.Dispatch<React.SetStateAction<Record<string, any>>> | null>(null);
 
 function interpolateString(text: string, stateVariables: Record<string, any>): string {
   if (typeof text !== "string") return "";
   return text.replace(/\{([^{}]+)\}/g, (match, key) => {
     const trimmedKey = key.trim();
-    if (trimmedKey in stateVariables) {
-      return String(stateVariables[trimmedKey]);
+    const value = getValueByPath(stateVariables, trimmedKey);
+    if (value !== undefined) {
+      return typeof value === "string" ? value : JSON.stringify(value);
     }
     return match;
   });
 }
+
+type ApiRequestStatusValue = "idle" | "loading" | "loaded" | "empty" | "error";
+type ApiRequestStatusState = Record<string, { status: ApiRequestStatusValue; error?: string | null; statusCode?: number | null }>;
 
 type MiniAppRendererProps = {
   miniApp: MiniApp;
@@ -377,6 +384,7 @@ function RenderPagination({ node }: { node: MiniAppNode }) {
 
 function RenderNodeRaw({ node, runAction }: RenderNodeProps) {
   const stateVariables = useContext(StateVariablesContext);
+  const setStateVariables = useContext(StateVariablesSetterContext);
   const style = node.style ?? {};
 
   if (["container", "row", "column"].includes(node.type)) {
@@ -529,10 +537,24 @@ function RenderNodeRaw({ node, runAction }: RenderNodeProps) {
   }
 
   if (node.type === "input") {
+    const variableName = stringStyle(node.props.variableName);
+    const value = variableName
+      ? String(getValueByPath(stateVariables, variableName) ?? node.props.defaultValue ?? "")
+      : undefined;
+
     return (
       <input
         placeholder={String(node.props.placeholder ?? "")}
-        defaultValue={String(node.props.defaultValue ?? "")}
+        value={value}
+        defaultValue={variableName ? undefined : String(node.props.defaultValue ?? "")}
+        onChange={variableName && setStateVariables ? (event) => {
+          const nextValue = event.target.value;
+          setStateVariables((prev) => {
+            const next = { ...prev };
+            setValueByPath(next, variableName, nextValue);
+            return next;
+          });
+        } : undefined}
         style={{
           backgroundColor: stringStyle(style.backgroundColor) ?? "#ffffff",
           color: stringStyle(style.textColor) ?? "#000000",
@@ -715,10 +737,24 @@ function RenderNodeRaw({ node, runAction }: RenderNodeProps) {
   }
 
   if (node.type === "textarea") {
+    const variableName = stringStyle(node.props.variableName);
+    const value = variableName
+      ? String(getValueByPath(stateVariables, variableName) ?? node.props.defaultValue ?? "")
+      : undefined;
+
     return (
       <textarea
         placeholder={String(node.props.placeholder ?? "")}
-        defaultValue={String(node.props.defaultValue ?? "")}
+        value={value}
+        defaultValue={variableName ? undefined : String(node.props.defaultValue ?? "")}
+        onChange={variableName && setStateVariables ? (event) => {
+          const nextValue = event.target.value;
+          setStateVariables((prev) => {
+            const next = { ...prev };
+            setValueByPath(next, variableName, nextValue);
+            return next;
+          });
+        } : undefined}
         style={{
           backgroundColor: stringStyle(style.backgroundColor) ?? "#ffffff",
           color: stringStyle(style.textColor) ?? "#000000",
@@ -1044,7 +1080,7 @@ function RenderNode(props: RenderNodeProps) {
   const { node, runAction } = props;
   const action = node.events?.onPress;
 
-  if (node.type !== "button" && action && action.type !== "none") {
+  if (node.type !== "button" && action) {
     return (
       <div
         onClick={(e) => {
@@ -1062,29 +1098,86 @@ function RenderNode(props: RenderNodeProps) {
   return element;
 }
 
-export function MiniAppRenderer({ miniApp, themeMode = "light" }: MiniAppRendererProps) {
-  const [currentScreenId, setCurrentScreenId] = useState(miniApp.entryScreenId);
-  const [history, setHistory] = useState<string[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
-  const [stateVariables, setStateVariables] = useState<Record<string, any>>({
+function collectAllProjectVariables(miniApp: any): Record<string, any> {
+  const vars: Record<string, any> = {
     display: "0",
     operand1: null,
     operator: null,
     isFinished: false,
     calcState: { display: "0", operand1: null, operator: null },
-  });
+  };
+
+  const visitAction = (action?: any) => {
+    if (!action) return;
+    if (action.type === "setVariable") {
+      const defaultValue = action.value !== undefined && typeof action.value === "string" && action.value.startsWith("=") ? "" : (action.value ?? "");
+      if (!(action.variable in vars)) {
+        vars[action.variable] = defaultValue;
+      }
+    } else if (action.type === "invokeApi") {
+      if (action.responseMappings) {
+        for (const mapping of action.responseMappings) {
+          if (getValueByPath(vars, mapping.targetVariable) === undefined) {
+            setValueByPath(vars, mapping.targetVariable, "");
+          }
+        }
+      }
+      visitAction(action.onLoading);
+      visitAction(action.onLoaded);
+      visitAction(action.onEmpty);
+      visitAction(action.onError);
+    }
+  };
+
+  const visitNode = (node: any) => {
+    if ((node.type === "input" || node.type === "textarea") && node.props?.variableName) {
+      setValueByPath(vars, node.props.variableName, node.props.defaultValue ?? "");
+    }
+    if (node.events?.onPress) {
+      visitAction(node.events.onPress);
+    }
+    if (node.children) {
+      node.children.forEach(visitNode);
+    }
+  };
+
+  for (const screen of miniApp.screens || []) {
+    if (screen.events?.onLoad) {
+      visitAction(screen.events.onLoad);
+    }
+    if (screen.nodes) {
+      screen.nodes.forEach(visitNode);
+    }
+  }
+
+  return vars;
+}
+
+export function MiniAppRenderer({ miniApp, themeMode = "light" }: MiniAppRendererProps) {
+  const [currentScreenId, setCurrentScreenId] = useState(miniApp.entryScreenId);
+  const [history, setHistory] = useState<string[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
+  const [stateVariables, setStateVariables] = useState<Record<string, any>>(() => collectAllProjectVariables(miniApp));
+  const [apiRequestStatus, setApiRequestStatus] = useState<ApiRequestStatusState>({});
 
   useEffect(() => {
     setCurrentScreenId(miniApp.entryScreenId);
     setHistory([]);
-    setStateVariables({
-      display: "0",
-      operand1: null,
-      operator: null,
-      isFinished: false,
-      calcState: { display: "0", operand1: null, operator: null },
-    });
+    setStateVariables(collectAllProjectVariables(miniApp));
+    setApiRequestStatus({});
   }, [miniApp.id, miniApp.entryScreenId]);
+
+  const runtimeVariables = useMemo(() => ({
+    ...stateVariables,
+    api: apiRequestStatus,
+  }), [apiRequestStatus, stateVariables]);
+
+  useEffect(() => {
+    const currentScreen = miniApp.screens.find((s) => s.id === currentScreenId);
+    if (currentScreen?.events?.onLoad) {
+      runAction(currentScreen.events.onLoad);
+    }
+  }, [currentScreenId]);
 
   const resolvedMiniApp = useMemo(() => {
     const theme = (miniApp.theme && Object.keys(miniApp.theme).length > 0) ? miniApp.theme : themePresets.default;
@@ -1107,8 +1200,106 @@ export function MiniAppRenderer({ miniApp, themeMode = "light" }: MiniAppRendere
     [currentScreenId, resolvedMiniApp.screens],
   );
 
+  const setApiStatus = (pathId: string, status: ApiRequestStatusValue, meta: { error?: string | null; statusCode?: number | null } = {}) => {
+    setApiRequestStatus((previous) => ({
+      ...previous,
+      [pathId]: {
+        status,
+        error: meta.error ?? null,
+        statusCode: meta.statusCode ?? null,
+      },
+    }));
+  };
+
   const runAction = (action: MiniAppAction | undefined) => {
     if (!action) {
+      return;
+    }
+
+    if (action.type === "invokeApi") {
+      const integration = miniApp.integrations?.find(i => i.id === action.integrationId);
+      const pathDef = miniApp.apiPaths?.find(p => p.id === action.pathId);
+      if (!integration || !pathDef) {
+        console.error("Missing integration or path definitions for invokeApi action.");
+        setToast("API is not configured");
+        window.setTimeout(() => setToast(null), 2200);
+        return;
+      }
+
+      let credentialValue = "";
+      if (integration.authConfig.type !== "none") {
+        const cred = miniApp.credentials?.find(c => c.id === integration.authConfig.credentialId);
+        if (cred) credentialValue = cred.value;
+      }
+
+      const params: Record<string, any> = {};
+      for (const field of pathDef.requestSchema || []) {
+        if (field.defaultValue !== undefined) {
+          setValueByPath(params, field.name, field.defaultValue);
+        }
+      }
+
+      for (const mapping of action.requestMappings) {
+        if (!mapping.parameter) continue;
+        if (mapping.sourceType === "static") {
+          setValueByPath(params, mapping.parameter, mapping.sourceValue);
+        } else if (mapping.sourceType === "credential") {
+          const cred = miniApp.credentials?.find(c => c.id === mapping.sourceValue);
+          setValueByPath(params, mapping.parameter, cred ? cred.value : "");
+        } else {
+          const resolvedValue = getValueByPath(runtimeVariables, mapping.sourceValue);
+          setValueByPath(params, mapping.parameter, resolvedValue !== undefined ? resolvedValue : "");
+        }
+      }
+
+      setApiStatus(action.pathId, "loading");
+      if (action.onLoading) {
+        runAction(action.onLoading);
+      }
+
+      invokeFetchClient(integration, pathDef, params, credentialValue).then((result) => {
+        if (result.success) {
+          if (action.responseMappings && action.responseMappings.length > 0) {
+            setStateVariables((prev) => {
+              const next = { ...prev };
+              for (const mapping of action.responseMappings) {
+                if (!mapping.responsePath || !mapping.targetVariable) continue;
+                const currentVal = getValueByPath(result.data, mapping.responsePath);
+                setValueByPath(next, mapping.targetVariable, currentVal !== undefined ? currentVal : null);
+              }
+              return next;
+            });
+          }
+
+          const isEmpty = !result.data ||
+            (Array.isArray(result.data) && result.data.length === 0) ||
+            (typeof result.data === "object" && Object.keys(result.data).length === 0);
+
+          if (isEmpty && action.onEmpty) {
+            setApiStatus(action.pathId, "empty", { statusCode: result.status });
+            runAction(action.onEmpty);
+          } else if (action.onLoaded) {
+            setApiStatus(action.pathId, "loaded", { statusCode: result.status });
+            runAction(action.onLoaded);
+          } else {
+            setApiStatus(action.pathId, isEmpty ? "empty" : "loaded", { statusCode: result.status });
+          }
+        } else {
+          setApiStatus(action.pathId, "error", { error: result.error || "API request failed", statusCode: result.status });
+          setToast(result.error || "API request failed");
+          window.setTimeout(() => setToast(null), 2200);
+          if (action.onError) {
+            runAction(action.onError);
+          }
+        }
+      }).catch((err) => {
+        console.error("invokeApi fetch error:", err);
+        setApiStatus(action.pathId, "error", { error: err?.message || "API request failed" });
+        if (action.onError) {
+          runAction(action.onError);
+        }
+      });
+
       return;
     }
 
@@ -1159,8 +1350,8 @@ export function MiniAppRenderer({ miniApp, themeMode = "light" }: MiniAppRendere
       setStateVariables((prev) => {
         const next = {
           ...prev,
-          [varName]: evaluatedValue,
         };
+        setValueByPath(next, varName, evaluatedValue);
         console.log(`[Simulator State Change] ${varName} =`, evaluatedValue, next);
         return next;
       });
@@ -1172,29 +1363,31 @@ export function MiniAppRenderer({ miniApp, themeMode = "light" }: MiniAppRendere
   };
 
   return (
-    <StateVariablesContext.Provider value={stateVariables}>
-      <div
-        className="relative flex h-full w-full flex-col overflow-hidden p-5 transition-colors duration-200"
-        style={{
-          backgroundColor: activeTheme.colors.background,
-          color: activeTheme.colors.text,
-        }}
-      >
+    <StateVariablesContext.Provider value={runtimeVariables}>
+      <StateVariablesSetterContext.Provider value={setStateVariables}>
         <div
-          className="mb-4 text-xs font-semibold uppercase tracking-wide shrink-0 transition-colors"
-          style={{ color: activeTheme.colors.mutedText }}
+          className="relative flex h-full w-full flex-col overflow-hidden p-5 transition-colors duration-200"
+          style={{
+            backgroundColor: activeTheme.colors.background,
+            color: activeTheme.colors.text,
+          }}
         >
-          {screen?.name}
-        </div>
-        <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-0.5">
-          {screen?.nodes.map((node) => <RenderNode key={node.id} node={node} runAction={runAction} />)}
-        </div>
-        {toast ? (
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-zinc-900 px-4 py-2 text-sm text-white shadow-lg z-[9999]">
-            {toast}
+          <div
+            className="mb-4 text-xs font-semibold uppercase tracking-wide shrink-0 transition-colors"
+            style={{ color: activeTheme.colors.mutedText }}
+          >
+            {screen?.name}
           </div>
-        ) : null}
-      </div>
+          <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-0.5">
+            {screen?.nodes.map((node) => <RenderNode key={node.id} node={node} runAction={runAction} />)}
+          </div>
+          {toast ? (
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-zinc-900 px-4 py-2 text-sm text-white shadow-lg z-[9999]">
+              {toast}
+            </div>
+          ) : null}
+        </div>
+      </StateVariablesSetterContext.Provider>
     </StateVariablesContext.Provider>
   );
 }
