@@ -511,6 +511,216 @@ describe("JSON Import & Validation Pipeline Tests", () => {
     expect(res.data.theme.dark.colors.primary).toBe("#3b82f6");
   });
 
+  test("Import accepts packaged project JSON containing manifest object", () => {
+    const packagedProject = {
+      manifest: {
+        id: "packaged-app",
+        name: "Packaged App",
+        version: "2.3.4",
+        entryScreenId: "home",
+      },
+      screens: validProject.screens,
+    };
+    const res = validateImportJson(JSON.stringify(packagedProject));
+    if (!res.isValid) {
+      console.log("VALIDATION ERRORS DETECTED:", JSON.stringify(res.errors, null, 2));
+    }
+    expect(res.isValid).toBe(true);
+    expect(res.type).toBe("project");
+    expect(res.data.id).toBe("packaged-app");
+    expect(res.data.name).toBe("Packaged App");
+    expect(res.data.version).toBe("2.3.4");
+    expect(res.data.entryScreenId).toBe("home");
+  });
+
+  test("Import accepts user's exact registration JSON", () => {
+    const userJson = {
+      "manifest": {
+        "id": "user-registration",
+        "name": "registration",
+        "version": "1.0.0",
+        "entryScreenId": "registration-screen"
+      },
+      "screens": [
+        {
+          "id": "registration-screen",
+          "name": "Registration",
+          "nodes": [
+            {
+              "id": "registration-container",
+              "type": "container",
+              "props": {},
+              "style": {
+                "direction": "vertical",
+                "alignItems": "stretch",
+                "justifyContent": "center",
+                "gap": 16,
+                "padding": 24,
+                "width": "100%",
+                "height": "100%",
+                "backgroundColor": "#f8fafc"
+              },
+              "children": [
+                {
+                  "id": "registration-title",
+                  "type": "text",
+                  "props": {
+                    "text": "Create Account",
+                    "numberOfLines": null
+                  },
+                  "style": {
+                    "fontSize": 30,
+                    "color": "#111827",
+                    "fontWeight": "700",
+                    "fontStyle": "normal",
+                    "textAlign": "center",
+                    "textDecoration": "none"
+                  }
+                },
+                {
+                  "id": "registration-subtitle",
+                  "type": "text",
+                  "props": {
+                    "text": "Enter your details to register",
+                    "numberOfLines": null
+                  },
+                  "style": {
+                    "fontSize": 15,
+                    "color": "#6b7280",
+                    "fontWeight": "400",
+                    "fontStyle": "normal",
+                    "textAlign": "center",
+                    "textDecoration": "none"
+                  }
+                },
+                {
+                  "id": "name-input",
+                  "type": "input",
+                  "props": {
+                    "label": "Name",
+                    "placeholder": "Enter your full name",
+                    "value": "",
+                    "disabled": false
+                  },
+                  "style": {
+                    "width": "100%",
+                    "minHeight": 50,
+                    "padding": 12,
+                    "fontSize": 16,
+                    "color": "#111827",
+                    "backgroundColor": "#ffffff",
+                    "borderColor": "#d1d5db",
+                    "borderWidth": 1,
+                    "borderRadius": 10
+                  }
+                },
+                {
+                  "id": "username-input",
+                  "type": "input",
+                  "props": {
+                    "label": "Username",
+                    "placeholder": "Enter username",
+                    "value": "",
+                    "disabled": false
+                  },
+                  "style": {
+                    "width": "100%",
+                    "minHeight": 50,
+                    "padding": 12,
+                    "fontSize": 16,
+                    "color": "#111827",
+                    "backgroundColor": "#ffffff",
+                    "borderColor": "#d1d5db",
+                    "borderWidth": 1,
+                    "borderRadius": 10
+                  }
+                },
+                {
+                  "id": "email-input",
+                  "type": "input",
+                  "props": {
+                    "label": "Email",
+                    "placeholder": "Enter your email",
+                    "value": "",
+                    "disabled": false,
+                    "keyboardType": "email-address"
+                  },
+                  "style": {
+                    "width": "100%",
+                    "minHeight": 50,
+                    "padding": 12,
+                    "fontSize": 16,
+                    "color": "#111827",
+                    "backgroundColor": "#ffffff",
+                    "borderColor": "#d1d5db",
+                    "borderWidth": 1,
+                    "borderRadius": 10
+                  }
+                },
+                {
+                  "id": "phone-input",
+                  "type": "input",
+                  "props": {
+                    "label": "Phone",
+                    "placeholder": "Enter your phone number",
+                    "value": "",
+                    "disabled": false,
+                    "keyboardType": "phone-pad"
+                  },
+                  "style": {
+                    "width": "100%",
+                    "minHeight": 50,
+                    "padding": 12,
+                    "fontSize": 16,
+                    "color": "#111827",
+                    "backgroundColor": "#ffffff",
+                    "borderColor": "#d1d5db",
+                    "borderWidth": 1,
+                    "borderRadius": 10
+                  }
+                },
+                {
+                  "id": "register-button",
+                  "type": "button",
+                  "props": {
+                    "label": "Register",
+                    "variant": "default",
+                    "size": "default",
+                    "disabled": false,
+                    "loading": false,
+                    "icon": "",
+                    "iconPosition": "left"
+                  },
+                  "style": {
+                    "backgroundColor": "#4f46e5",
+                    "textColor": "#ffffff",
+                    "borderRadius": 10,
+                    "padding": 14,
+                    "minHeight": 52,
+                    "fontSize": 16,
+                    "fontWeight": "700",
+                    "textAlign": "center",
+                    "width": "100%"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+};
+    const res = validateImportJson(JSON.stringify(userJson));
+    if (!res.isValid) {
+      console.log("VALIDATION ERRORS FOR USER JSON:", JSON.stringify(res.errors, null, 2));
+    }
+    expect(res.isValid).toBe(true);
+    expect(res.type).toBe("project");
+    expect(res.data.id).toBe("user-registration");
+    expect(res.data.name).toBe("registration");
+    expect(res.data.version).toBe("1.0.0");
+    expect(res.data.entryScreenId).toBe("registration-screen");
+  });
+
   test("should successfully validate individual component JSON definitions", () => {
     const singleComponent = {
       type: "button",
