@@ -21,6 +21,13 @@ export function createMiniAppPackage(miniApp: MiniApp): MiniAppPackage {
       entryScreenId: miniApp.entryScreenId,
     },
     screens: miniApp.screens,
+    integrations: miniApp.integrations || [],
+    apiPaths: miniApp.apiPaths || [],
+    credentials: (miniApp.credentials || []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      value: "", // Strip secret raw value for security
+    })),
   };
 }
 
