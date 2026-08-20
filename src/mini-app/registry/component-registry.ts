@@ -159,6 +159,7 @@ export const componentRegistry: Record<ComponentType, ComponentDefinition> = {
     defaultProps: {
       placeholder: "Enter text",
       defaultValue: "",
+      variableName: "",
       inputType: "text",
       secureTextEntry: false,
       disabled: false,
@@ -188,6 +189,7 @@ export const componentRegistry: Record<ComponentType, ComponentDefinition> = {
     defaultProps: {
       placeholder: "Type your message here.",
       defaultValue: "",
+      variableName: "",
       numberOfLines: 4,
       maxLength: undefined,
       disabled: false,
