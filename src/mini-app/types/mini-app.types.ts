@@ -48,6 +48,17 @@ export type MiniAppAction =
   | {
       type: "showToast";
       message: string;
+    }
+  | {
+      type: "invokeApi";
+      integrationId: string;
+      pathId: string;
+      requestMappings: { parameter: string; sourceType: "variable" | "static" | "credential"; sourceValue: string }[];
+      responseMappings: { responsePath: string; targetVariable: string }[];
+      onLoading?: MiniAppAction;
+      onLoaded?: MiniAppAction;
+      onEmpty?: MiniAppAction;
+      onError?: MiniAppAction;
     };
 
 export type MiniAppNode = {
@@ -63,6 +74,9 @@ export type ScreenDefinition = {
   id: string;
   name: string;
   nodes: MiniAppNode[];
+  events?: {
+    onLoad?: MiniAppAction;
+  };
 };
 
 export type ThemeColors = {
@@ -131,6 +145,58 @@ export type MiniApp = {
   entryScreenId: string;
   screens: ScreenDefinition[];
   theme?: MiniAppTheme;
+  credentials?: Credential[];
+  integrations?: Integration[];
+  apiPaths?: ApiPath[];
+};
+
+export type SchemaFieldType = "string" | "number" | "boolean" | "object" | "array";
+
+export type SchemaField = {
+  name: string;
+  type: SchemaFieldType;
+  required: boolean;
+  defaultValue?: any;
+  validationRules?: {
+    minimum?: number;
+    maximum?: number;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+  };
+};
+
+export type Credential = {
+  id: string;
+  name: string;
+  value: string;
+};
+
+export type AuthenticationType = "none" | "apiKey" | "bearer";
+
+export type AuthenticationConfig = {
+  type: AuthenticationType;
+  credentialId?: string;
+  headerName?: string;
+};
+
+export type Integration = {
+  id: string;
+  name: string;
+  baseUrl: string;
+  authConfig: AuthenticationConfig;
+  defaultHeaders?: { key: string; value: string }[];
+  loggingLevel: "off" | "basic" | "verbose";
+};
+
+export type ApiPath = {
+  id: string;
+  name: string;
+  integrationId: string;
+  path: string;
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  requestSchema: SchemaField[];
+  responseSchema: SchemaField[];
 };
 
 export type MiniAppPackage = {
@@ -141,6 +207,9 @@ export type MiniAppPackage = {
     entryScreenId: string;
   };
   screens: ScreenDefinition[];
+  credentials?: Credential[];
+  integrations?: Integration[];
+  apiPaths?: ApiPath[];
 };
 
 export type ExportTarget = "expo-mini-app" | "expo-standalone" | "react-native-cli";
