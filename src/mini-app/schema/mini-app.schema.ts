@@ -6,28 +6,52 @@ const supportedTypes = Object.keys(componentRegistry) as [
   ...(keyof typeof componentRegistry)[],
 ];
 
-export const miniAppActionSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("navigate"),
-    screenId: z.string().min(1),
-  }),
-  z.object({
-    type: z.literal("goBack"),
-  }),
-  z.object({
-    type: z.literal("showAlert"),
-    message: z.string().min(1),
-  }),
-  z.object({
-    type: z.literal("setVariable"),
-    variable: z.string().min(1),
-    value: z.unknown(),
-  }),
-  z.object({
-    type: z.literal("showToast"),
-    message: z.string().min(1),
-  }),
-]);
+export const miniAppActionSchema: z.ZodType<any> = z.lazy(() =>
+  z.discriminatedUnion("type", [
+    z.object({
+      type: z.literal("navigate"),
+      screenId: z.string().min(1),
+    }),
+    z.object({
+      type: z.literal("goBack"),
+    }),
+    z.object({
+      type: z.literal("showAlert"),
+      message: z.string().min(1),
+    }),
+    z.object({
+      type: z.literal("setVariable"),
+      variable: z.string().min(1),
+      value: z.unknown(),
+    }),
+    z.object({
+      type: z.literal("showToast"),
+      message: z.string().min(1),
+    }),
+    z.object({
+      type: z.literal("invokeApi"),
+      integrationId: z.string().min(1),
+      pathId: z.string().min(1),
+      requestMappings: z.array(
+        z.object({
+          parameter: z.string().min(1),
+          sourceType: z.enum(["variable", "static", "credential"]),
+          sourceValue: z.string(),
+        })
+      ),
+      responseMappings: z.array(
+        z.object({
+          responsePath: z.string().min(1),
+          targetVariable: z.string().min(1),
+        })
+      ),
+      onLoading: z.lazy(() => miniAppActionSchema.optional()),
+      onLoaded: z.lazy(() => miniAppActionSchema.optional()),
+      onEmpty: z.lazy(() => miniAppActionSchema.optional()),
+      onError: z.lazy(() => miniAppActionSchema.optional()),
+    }),
+  ])
+);
 
 export type MiniAppActionInput = z.input<typeof miniAppActionSchema>;
 
@@ -60,6 +84,11 @@ export const screenDefinitionSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   nodes: z.array(miniAppNodeSchema),
+  events: z
+    .object({
+      onLoad: z.lazy(() => miniAppActionSchema).optional(),
+    })
+    .optional(),
 });
 
 const themeColorsSchema = z.object({
@@ -120,6 +149,53 @@ const miniAppThemeSchema = z.object({
   dark: modeThemeSchema,
 });
 
+export const schemaFieldSchema = z.object({
+  name: z.string().min(1),
+  type: z.enum(["string", "number", "boolean", "object", "array"]),
+  required: z.boolean(),
+  defaultValue: z.any().optional(),
+  validationRules: z
+    .object({
+      minimum: z.number().optional(),
+      maximum: z.number().optional(),
+      minLength: z.number().optional(),
+      maxLength: z.number().optional(),
+      pattern: z.string().optional(),
+    })
+    .optional(),
+});
+
+export const credentialSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  value: z.string(),
+});
+
+export const authenticationConfigSchema = z.object({
+  type: z.enum(["none", "apiKey", "bearer"]),
+  credentialId: z.string().optional(),
+  headerName: z.string().optional(),
+});
+
+export const integrationSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  baseUrl: z.string().min(1),
+  authConfig: authenticationConfigSchema,
+  defaultHeaders: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
+  loggingLevel: z.enum(["off", "basic", "verbose"]).default("off"),
+});
+
+export const apiPathSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  integrationId: z.string().min(1),
+  path: z.string().min(1),
+  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
+  requestSchema: z.array(schemaFieldSchema),
+  responseSchema: z.array(schemaFieldSchema),
+});
+
 export const miniAppSchema = z
   .object({
     schemaVersion: z.number().optional().default(1),
@@ -138,10 +214,16 @@ export const miniAppSchema = z
       miniAppThemeSchema.optional()
     ),
     ownerId: z.any().nullable().optional().default(null),
+    credentials: z.array(credentialSchema).optional().default([]),
+    integrations: z.array(integrationSchema).optional().default([]),
+    apiPaths: z.array(apiPathSchema).optional().default([]),
   })
   .superRefine((app, ctx) => {
     const screenIds = new Set<string>();
     const nodeIds = new Set<string>();
+    const integrationIds = new Set<string>();
+    const apiPathIds = new Set<string>();
+    const operationKeys = new Set<string>();
 
     for (const [screenIndex, screen] of app.screens.entries()) {
       if (screenIds.has(screen.id)) {
@@ -162,6 +244,46 @@ export const miniAppSchema = z
           message: `Screen "${app.entryScreenId || ""}" does not exist.`,
         });
       }
+    }
+
+    for (const [integrationIndex, integration] of app.integrations.entries()) {
+      if (integrationIds.has(integration.id)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["integrations", integrationIndex, "id"],
+          message: `Duplicate integration ID "${integration.id}".`,
+        });
+      }
+      integrationIds.add(integration.id);
+    }
+
+    for (const [pathIndex, apiPath] of app.apiPaths.entries()) {
+      if (apiPathIds.has(apiPath.id)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["apiPaths", pathIndex, "id"],
+          message: `Duplicate API path ID "${apiPath.id}".`,
+        });
+      }
+      apiPathIds.add(apiPath.id);
+
+      if (!integrationIds.has(apiPath.integrationId)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["apiPaths", pathIndex, "integrationId"],
+          message: `Integration "${apiPath.integrationId}" does not exist.`,
+        });
+      }
+
+      const operationKey = `${apiPath.integrationId}:${apiPath.method}:${apiPath.path}`;
+      if (operationKeys.has(operationKey)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["apiPaths", pathIndex, "path"],
+          message: `Duplicate API operation "${apiPath.method} ${apiPath.path}" for integration "${apiPath.integrationId}".`,
+        });
+      }
+      operationKeys.add(operationKey);
     }
 
     const visitNode = (node: z.infer<typeof miniAppNodeSchema>, path: (string | number)[]) => {
@@ -256,13 +378,30 @@ export const miniAppSchema = z
         });
       }
 
-      for (const [eventName, action] of Object.entries(node.events ?? {})) {
+      const nodeEvents = (node.events ?? {}) as Record<string, any>;
+      for (const [eventName, action] of Object.entries(nodeEvents)) {
         if (action.type === "navigate" && !screenIds.has(action.screenId)) {
           ctx.addIssue({
             code: "custom",
             path: [...path, "events", eventName, "screenId"],
             message: `Navigation target "${action.screenId}" does not exist.`,
           });
+        }
+        if (action.type === "invokeApi") {
+          if (!integrationIds.has(action.integrationId)) {
+            ctx.addIssue({
+              code: "custom",
+              path: [...path, "events", eventName, "integrationId"],
+              message: `Integration "${action.integrationId}" does not exist.`,
+            });
+          }
+          if (!apiPathIds.has(action.pathId)) {
+            ctx.addIssue({
+              code: "custom",
+              path: [...path, "events", eventName, "pathId"],
+              message: `API path "${action.pathId}" does not exist.`,
+            });
+          }
         }
       }
 
