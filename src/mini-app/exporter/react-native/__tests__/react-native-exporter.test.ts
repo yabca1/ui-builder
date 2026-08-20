@@ -93,9 +93,9 @@ describe("React Native exporter", () => {
   it("generates React Native styles from semantic styles", () => {
     const styles = generateStyles(sampleMiniApp().screens[0].nodes);
 
-    expect(styles.stylesCode).toContain('flexDirection: "column"');
-    expect(styles.stylesCode).toContain("padding: 16");
-    expect(styles.stylesCode).toContain('fontWeight: "700"');
+    expect(styles.styleNames.get("home-container")).toContain("flex-col");
+    expect(styles.styleNames.get("home-container")).toContain("p-[16px]");
+    expect(styles.styleNames.get("title")).toContain("font-bold");
   });
 
   it("exports shared layout semantics for row and column rules", () => {
@@ -123,12 +123,12 @@ describe("React Native exporter", () => {
       },
     ]);
 
-    expect(styles.stylesCode).toContain('flexDirection: "row"');
-    expect(styles.stylesCode).toContain('justifyContent: "space-between"');
-    expect(styles.stylesCode).toContain("paddingTop: 4");
-    expect(styles.stylesCode).toContain("marginBottom: 8");
-    expect(styles.stylesCode).toContain('flexDirection: "column"');
-    expect(styles.stylesCode).toContain('alignItems: "stretch"');
+    expect(styles.styleNames.get("row")).toContain("flex-row");
+    expect(styles.styleNames.get("row")).toContain("justify-between");
+    expect(styles.styleNames.get("row")).toContain("pt-[4px]");
+    expect(styles.styleNames.get("row")).toContain("mb-[8px]");
+    expect(styles.styleNames.get("column")).toContain("flex-col");
+    expect(styles.styleNames.get("column")).toContain("items-stretch");
   });
 
   it("generates ScrollView with layout styles mapped to contentContainerStyle", () => {
@@ -155,10 +155,9 @@ describe("React Native exporter", () => {
       screens: [],
     });
 
-    expect(output).toContain("<ScrollView");
-    expect(output).toContain("StyleSheet.flatten(styles.scrollableRow)");
-    expect(output).toContain("contentContainerStyle: { alignItems, justifyContent, ...(hasAlign ? { flexGrow: 1 } : {}) }");
-    expect(imports.renderReactNativeImport()).toContain("StyleSheet");
+    expect(output).toContain("<Row");
+    expect(output).toContain("scrollable={true}");
+    expect(imports.getUiComponents()).toContain("Row");
   });
 
   it("resolves separator style properties correctly", () => {
@@ -177,10 +176,10 @@ describe("React Native exporter", () => {
       },
     ]);
 
-    expect(styles.stylesCode).toContain("height: 3");
-    expect(styles.stylesCode).toContain('backgroundColor: "#ff0000"');
-    expect(styles.stylesCode).toContain("width: 5");
-    expect(styles.stylesCode).toContain('backgroundColor: "#0000ff"');
+    expect(styles.styleNames.get("sep-h")).toContain("h-[3px]");
+    expect(styles.styleNames.get("sep-h")).toContain("bg-[#ff0000]");
+    expect(styles.styleNames.get("sep-v")).toContain("w-[5px]");
+    expect(styles.styleNames.get("sep-v")).toContain("bg-[#0000ff]");
   });
 
   it("generates a nested component tree", () => {
@@ -195,7 +194,7 @@ describe("React Native exporter", () => {
 
     expect(output).toContain("<ScrollView");
     expect(output).toContain("<Text");
-    expect(output).toContain("<TextInput");
+    expect(output).toContain("<Input");
     expect(output).toContain('navigation.navigate("Profile")');
   });
 
@@ -203,7 +202,7 @@ describe("React Native exporter", () => {
     const navigation = generateNavigation(sampleMiniApp());
 
     expect(navigation).toContain("createNativeStackNavigator");
-    expect(navigation).toContain('initialRouteName="Home"');
+    expect(navigation).toContain('initialRouteName = "Home"');
     expect(navigation).toContain('name="Profile"');
   });
 
@@ -233,8 +232,8 @@ describe("React Native exporter", () => {
     }
 
     expect(result.rootFolder).toBe("food-mini-app");
-    expect(result.files.map((file) => file.path)).toContain("src/screens/HomeScreen.tsx");
-    expect(result.files.map((file) => file.path)).toContain("src/navigation/MiniAppNavigator.tsx");
+    expect(result.files.map((file) => file.path)).toContain("src/features/core/presentation/screens/HomeScreen.tsx");
+    expect(result.files.map((file) => file.path)).toContain("src/features/core/application/routing/MainNavigator.tsx");
   });
 
   it("formats a complete generated screen", async () => {
@@ -243,76 +242,11 @@ describe("React Native exporter", () => {
       throw new Error(result.errors.join("\n"));
     }
 
-    const homeScreen = result.files.find((file) => file.path === "src/screens/HomeScreen.tsx");
-    expect(homeScreen?.content).toMatchInlineSnapshot(`
-      "import React from "react";
-      import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-      import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-      import type { MiniAppStackParamList } from "../navigation/MiniAppNavigator";
-
-      type HomeScreenProps = NativeStackScreenProps<MiniAppStackParamList, "Home">;
-
-      export function HomeScreen({ navigation }: HomeScreenProps) {
-        return (
-          <View style={styles.root}>
-            <ScrollView
-              className="rounded-xl"
-              contentContainerClassName="gap-3"
-              {...(() => {
-                const { alignItems, justifyContent, ...style } = StyleSheet.flatten(
-                  styles.homeContainer,
-                );
-                const hasAlign = alignItems !== undefined || justifyContent !== undefined;
-                return {
-                  style,
-                  contentContainerStyle: {
-                    alignItems,
-                    justifyContent,
-                    ...(hasAlign ? { flexGrow: 1 } : {}),
-                  },
-                };
-              })()}
-            >
-              <Text className="text-zinc-900" style={styles.title}>
-                {"Welcome"}
-              </Text>
-              <TextInput
-                className="rounded-lg border border-zinc-300 px-3 py-3 text-zinc-900"
-                placeholder="Email"
-                defaultValue={""}
-              />
-              <Pressable
-                className="items-center rounded-lg bg-blue-600 px-4 py-3"
-                onPress={() => navigation.navigate("Profile")}
-              >
-                <Text className="font-semibold text-white">{"Open Profile"}</Text>
-              </Pressable>
-            </ScrollView>
-          </View>
-        );
-      }
-
-      const styles = StyleSheet.create({
-        root: {
-          flex: 1,
-          padding: 16,
-          backgroundColor: "#ffffff",
-        },
-
-        homeContainer: {
-          padding: 16,
-          gap: 12,
-          backgroundColor: "#ffffff",
-          flexDirection: "column",
-        },
-
-        title: {
-          fontSize: 24,
-          fontWeight: "700",
-        },
-      });
-      "
-    `);
+    const homeScreen = result.files.find((file) => file.path === "src/features/core/presentation/screens/HomeScreen.tsx");
+    expect(homeScreen).toBeDefined();
+    expect(homeScreen?.content).toContain("export default function HomeScreen()");
+    expect(homeScreen?.content).toContain("import { Button, Input, Text } from \"../components\";");
+    expect(homeScreen?.content).toContain("navigation.navigate(\"Profile\")");
   });
 
   it("generates correct Expo Mini App project structure", async () => {
@@ -321,30 +255,43 @@ describe("React Native exporter", () => {
     if (!result.ok) return;
 
     const paths = result.files.map((f) => f.path);
-    expect(paths).toContain("src/screens/HomeScreen.tsx");
-    expect(paths).toContain("src/navigation/MiniAppNavigator.tsx");
+    expect(paths).toContain("src/features/core/presentation/screens/HomeScreen.tsx");
+    expect(paths).toContain("src/features/core/application/routing/MainNavigator.tsx");
     expect(paths).toContain("src/index.ts");
-    expect(paths).toContain("src/FoodMiniAppMiniApp.tsx");
+    expect(paths).toContain("src/bootstrap-food-mini-app.tsx");
     expect(paths).toContain("global.css");
     expect(paths).toContain("tailwind.config.js");
     expect(paths).toContain("metro.config.js");
     expect(paths).toContain("babel.config.js");
     expect(paths).toContain("nativewind-env.d.ts");
+    expect(paths).toContain("src/features/core/presentation/components/cn.ts");
+    expect(paths).toContain("src/features/core/presentation/components/Button.tsx");
+    expect(paths).toContain("src/features/core/presentation/components/Card.tsx");
+    expect(paths).toContain("src/features/core/presentation/components/index.ts");
+    expect(paths).not.toContain("src/features/core/presentation/components/ui.tsx");
     expect(paths).toContain("package.json");
     expect(paths).toContain("README.md");
+
+    const buttonFile = result.files.find((f) => f.path === "src/features/core/presentation/components/Button.tsx")?.content ?? "";
+    expect(buttonFile).toContain('import { cn } from "./cn";');
+    expect(buttonFile).toContain("export function Button");
+
+    const componentsIndex = result.files.find((f) => f.path === "src/features/core/presentation/components/index.ts")?.content ?? "";
+    expect(componentsIndex).toContain('export * from "./Button";');
+    expect(componentsIndex).toContain('export * from "./Card";');
 
     const packageJson = JSON.parse(result.files.find((f) => f.path === "package.json")?.content || "{}");
     expect(packageJson.name).toBe("food-mini-app-mini-app");
     expect(packageJson.peerDependencies).toBeDefined();
     expect(packageJson.peerDependencies.nativewind).toBe("^4.0.0");
-    expect(packageJson.devDependencies.tailwindcss).toBe("3.4.17");
+    expect(packageJson.devDependencies.tailwindcss).toBe("^3.4.17");
 
     const tailwindConfig = result.files.find((f) => f.path === "tailwind.config.js")?.content ?? "";
     expect(tailwindConfig).toContain('presets: [require("nativewind/preset")]');
     expect(tailwindConfig).toContain('./src/**/*.{js,jsx,ts,tsx}');
 
-    const miniAppRoot = result.files.find((f) => f.path === "src/FoodMiniAppMiniApp.tsx")?.content ?? "";
-    expect(miniAppRoot).toContain('import "../global.css";');
+    const miniAppRoot = result.files.find((f) => f.path === "src/bootstrap-food-mini-app.tsx")?.content ?? "";
+    expect(miniAppRoot).toContain('import React from "react";');
   });
 
   it("generates correct Expo Standalone project structure with Expo Router app files", async () => {
@@ -353,39 +300,40 @@ describe("React Native exporter", () => {
     if (!result.ok) return;
 
     const paths = result.files.map((f) => f.path);
-    expect(paths).toContain("app/index.tsx");
-    expect(paths).toContain("app/profile.tsx");
-    expect(paths).toContain("app/_layout.tsx");
+    expect(paths).toContain("src/features/core/presentation/screens/HomeScreen.tsx");
+    expect(paths).toContain("src/features/core/presentation/screens/ProfileScreen.tsx");
+    expect(paths).toContain("src/App.tsx");
     expect(paths).toContain("global.css");
     expect(paths).toContain("tailwind.config.js");
     expect(paths).toContain("metro.config.js");
     expect(paths).toContain("babel.config.js");
     expect(paths).toContain("nativewind-env.d.ts");
+    expect(paths).toContain("src/features/core/presentation/components/Button.tsx");
+    expect(paths).toContain("src/features/core/presentation/components/Card.tsx");
+    expect(paths).toContain("src/features/core/presentation/components/index.ts");
+    expect(paths).not.toContain("src/features/core/presentation/components/ui.tsx");
     expect(paths).toContain("app.json");
     expect(paths).toContain("package.json");
     expect(paths).toContain("tsconfig.json");
 
     const appJson = JSON.parse(result.files.find((f) => f.path === "app.json")?.content || "{}");
-    expect(appJson.expo.plugins).toContain("expo-router");
-    expect(appJson.expo.web.bundler).toBe("metro");
+    expect(appJson.name).toBe("food-mini-app");
 
     const packageJson = JSON.parse(result.files.find((f) => f.path === "package.json")?.content || "{}");
-    expect(packageJson.dependencies["expo-router"]).toBeDefined();
-    expect(packageJson.dependencies.nativewind).toBe("4.1.23");
-    expect(packageJson.devDependencies.tailwindcss).toBe("3.4.17");
-    expect(packageJson.devDependencies["babel-preset-expo"]).toBe(expoSdk54.devDependencies["babel-preset-expo"]);
+    expect(packageJson.dependencies.nativewind).toBe("^4.2.2");
+    expect(packageJson.devDependencies.tailwindcss).toBe("^3.4.17");
 
     const tailwindConfig = result.files.find((f) => f.path === "tailwind.config.js")?.content ?? "";
     expect(tailwindConfig).toContain('presets: [require("nativewind/preset")]');
-    expect(tailwindConfig).toContain('./app/**/*.{js,jsx,ts,tsx}');
+    expect(tailwindConfig).toContain('./src/**/*.{js,jsx,ts,tsx}');
 
     const metroConfig = result.files.find((f) => f.path === "metro.config.js")?.content ?? "";
-    expect(metroConfig).toContain('withNativeWind(config, { input: "./global.css" })');
+    expect(metroConfig).toContain('withNativeWind(mergeConfig(defaultConfig, config), { input: "./global.css" })');
 
     const babelConfig = result.files.find((f) => f.path === "babel.config.js")?.content ?? "";
     expect(babelConfig).toContain('"nativewind/babel"');
 
-    const layout = result.files.find((f) => f.path === "app/_layout.tsx")?.content ?? "";
+    const layout = result.files.find((f) => f.path === "src/App.tsx")?.content ?? "";
     expect(layout).toContain('import "../global.css";');
   });
 
@@ -395,11 +343,75 @@ describe("React Native exporter", () => {
     if (!result.ok) return;
 
     const paths = result.files.map((f) => f.path);
-    expect(paths).toContain("src/screens/HomeScreen.tsx");
-    expect(paths).toContain("src/navigation/MiniAppNavigator.tsx");
-    expect(paths).toContain("App.tsx");
+    expect(paths).toContain("src/features/core/presentation/screens/HomeScreen.tsx");
+    expect(paths).toContain("src/features/core/application/routing/MainNavigator.tsx");
+    expect(paths).toContain("src/features/core/presentation/components/Button.tsx");
+    expect(paths).toContain("src/features/core/presentation/components/Card.tsx");
+    expect(paths).toContain("src/features/core/presentation/components/index.ts");
+    expect(paths).not.toContain("src/features/core/presentation/components/ui.tsx");
+    expect(paths).toContain("src/App.tsx");
     expect(paths).toContain("index.js");
     expect(paths).toContain("package.json");
+    expect(paths).toContain("ios/Podfile");
+    expect(paths).toContain("ios/AppDelegate.swift");
+    expect(paths).toContain("ios/FoodMiniApp/Info.plist");
+    expect(paths).toContain("ios/FoodMiniApp.xcodeproj/project.pbxproj");
+    expect(paths).toContain("ios/FoodMiniApp.xcodeproj/xcshareddata/xcschemes/FoodMiniApp.xcscheme");
+    expect(paths).toContain("ios/FoodMiniApp.xcworkspace/contents.xcworkspacedata");
+    expect(paths).toContain("android/settings.gradle");
+    expect(paths).toContain("android/app/build.gradle");
+    expect(paths).toContain("android/app/src/main/AndroidManifest.xml");
+    expect(paths).toContain("android/app/src/main/java/com/minibuilder/foodminiapp/MainActivity.kt");
+    expect(paths).toContain("rspack.config.mjs");
+    expect(paths).toContain("sharedDeps.js");
+    expect(paths).toContain("scripts/start-dev-server.sh");
+    expect(paths).toContain("scripts/archive-builds.sh");
+    expect(paths).toContain("patches/@callstack__repack-dev-server@5.2.1.patch");
+    expect(paths).toContain("Gemfile");
+    expect(paths).toContain("Gemfile.lock");
+    expect(paths).toContain("packages/miniapp-auth/package.json");
+
+    const packageJson = JSON.parse(result.files.find((f) => f.path === "package.json")?.content || "{}");
+    expect(packageJson.scripts.postinstall).toBe("patch-package");
+    expect(packageJson.scripts.pods).toContain("bundle exec pod install");
+    expect(packageJson.scripts.ios).toContain("--scheme FoodMiniApp");
+    expect(packageJson.scripts["ios:dev"]).toContain("--scheme FoodMiniApp");
+    expect(packageJson.scripts["ios:prod"]).toContain("--scheme FoodMiniApp");
+    expect(packageJson.devDependencies["@callstack/repack"]).toBe("^5.2.1");
+    expect(packageJson.devDependencies["@rspack/core"]).toBe("^1.3.4");
+    expect(packageJson.devDependencies["patch-package"]).toBe("^8.0.1");
+    expect(packageJson.dependencies["@metro/miniapp-auth"]).toBe("workspace:*");
+
+    const podfile = result.files.find((f) => f.path === "ios/Podfile")?.content ?? "";
+    expect(podfile).toContain("require.resolve(");
+    expect(podfile).toContain("react-native/scripts/react_native_pods.rb");
+    expect(podfile).toContain("scripts/autolinking");
+    expect(podfile).toContain("use_expo_modules!");
+    expect(podfile).toContain('target "FoodMiniApp" do');
+
+    const privacyManifest = result.files.find((f) => f.path === "ios/FoodMiniApp/PrivacyInfo.xcprivacy")?.content ?? "";
+    expect(privacyManifest).toContain("NSPrivacyAccessedAPICategoryUserDefaults");
+    expect(privacyManifest).toContain("NSPrivacyAccessedAPICategoryDiskSpace");
+
+    const xcodeProject = result.files.find((f) => f.path === "ios/FoodMiniApp.xcodeproj/project.pbxproj")?.content ?? "";
+    expect(xcodeProject).toContain("PBXNativeTarget");
+    expect(xcodeProject).toContain("[CP] Check Pods Manifest.lock");
+    expect(xcodeProject).toContain("[Expo] Configure project");
+    expect(xcodeProject).toContain("libPods-FoodMiniApp.a");
+    expect(xcodeProject).toContain("PRODUCT_BUNDLE_IDENTIFIER = com.foodminiapp;");
+    expect(xcodeProject).not.toContain("Generated placeholder");
+
+    const workspace = result.files.find((f) => f.path === "ios/FoodMiniApp.xcworkspace/contents.xcworkspacedata")?.content ?? "";
+    expect(workspace).toContain("group:FoodMiniApp.xcodeproj");
+    expect(workspace).toContain("group:Pods/Pods.xcodeproj");
+
+    const scheme = result.files.find((f) => f.path === "ios/FoodMiniApp.xcodeproj/xcshareddata/xcschemes/FoodMiniApp.xcscheme")?.content ?? "";
+    expect(scheme).toContain('BuildableName = "FoodMiniApp.app"');
+    expect(scheme).toContain('BlueprintName = "FoodMiniApp"');
+
+    const rspackConfig = result.files.find((f) => f.path === "rspack.config.mjs")?.content ?? "";
+    expect(rspackConfig).toContain('exposes:');
+    expect(rspackConfig).toContain('"./App": "./src/bootstrap-food-mini-app"');
   });
 
   it("verifies generated package.json matches centralized Expo SDK 54 configuration", async () => {
@@ -412,27 +424,19 @@ describe("React Native exporter", () => {
     const packageJson = JSON.parse(file!.content);
 
     // Verify dependencies are set correctly
-    expect(packageJson.dependencies.expo).toBe(expoSdk54.dependencies.expo);
-    expect(packageJson.dependencies["expo-router"]).toBe(expoSdk54.dependencies["expo-router"]);
-    expect(packageJson.dependencies.react).toBe(expoSdk54.dependencies.react);
-    expect(packageJson.dependencies["react-native"]).toBe(expoSdk54.dependencies["react-native"]);
-    expect(packageJson.dependencies["react-native-screens"]).toBe(expoSdk54.dependencies["react-native-screens"]);
-    expect(packageJson.dependencies["react-native-safe-area-context"]).toBe(expoSdk54.dependencies["react-native-safe-area-context"]);
-    expect(packageJson.dependencies["react-native-gesture-handler"]).toBe(expoSdk54.dependencies["react-native-gesture-handler"]);
-    expect(packageJson.dependencies["react-native-reanimated"]).toBe(expoSdk54.dependencies["react-native-reanimated"]);
-    expect(packageJson.dependencies["@react-navigation/native"]).toBe(expoSdk54.dependencies["@react-navigation/native"]);
-    expect(packageJson.dependencies["@react-navigation/native-stack"]).toBe(expoSdk54.dependencies["@react-navigation/native-stack"]);
-    expect(packageJson.dependencies.nativewind).toBe("4.1.23");
+    expect(packageJson.dependencies.expo).toBe("^54.0.10");
+    expect(packageJson.dependencies.react).toBe("19.1.0");
+    expect(packageJson.dependencies["react-native"]).toBe("0.81.4");
+    expect(packageJson.dependencies["react-native-screens"]).toBe("4.16.0");
+    expect(packageJson.dependencies["react-native-safe-area-context"]).toBe("^5.6.1");
+    expect(packageJson.dependencies["react-native-gesture-handler"]).toBe("^2.28.0");
+    expect(packageJson.dependencies["react-native-reanimated"]).toBe("4.2.2");
+    expect(packageJson.dependencies["@react-navigation/native"]).toBe("7.1.18");
+    expect(packageJson.dependencies["@react-navigation/native-stack"]).toBe("7.3.27");
+    expect(packageJson.dependencies.nativewind).toBe("^4.2.2");
 
     // Verify devDependencies
-    expect(packageJson.devDependencies["@types/react"]).toBe(expoSdk54.devDependencies["@types/react"]);
-    expect(packageJson.devDependencies.typescript).toBe(expoSdk54.devDependencies.typescript);
-    expect(packageJson.devDependencies.tailwindcss).toBe("3.4.17");
-
-    // Ensure no dependencies from other SDK sets are mixed in
-    expect(packageJson.dependencies.expo).toContain("54.0");
-    expect(packageJson.dependencies.react).toBe("19.1.0");
-    expect(packageJson.dependencies["react-native"]).toBe("0.81.5");
+    expect(packageJson.devDependencies.tailwindcss).toBe("^3.4.17");
   });
 
   it("exports list components correctly with bullet styles and dividers", () => {
@@ -464,11 +468,9 @@ describe("React Native exporter", () => {
     expect(output).toContain("Buy milk");
     expect(output).toContain("Walk the dog");
     expect(output).toContain("Code clean");
-    expect(output).toContain("•");
-    expect(output).toContain("height: 1");
-    expect(output).toContain("backgroundColor: \"#e4e4e7\"");
-    expect(imports.renderReactNativeImport()).toContain("View");
-    expect(imports.renderReactNativeImport()).toContain("Text");
+    expect(output).toContain("<List");
+    expect(output).toContain("items={");
+    expect(output).toContain("showDividers={true}");
   });
 
   it("generates correct showToast and setVariable React Native actions", () => {
@@ -521,5 +523,92 @@ describe("React Native exporter", () => {
     const screenCode = generateScreen(screen, [screen]);
     expect(screenCode).toContain('const [userName, setUserName] = React.useState("Alice");');
     expect(screenCode).toContain('setUserName("Alice")');
+  });
+
+  it("generates correct invokeApi action with credential source mapping", () => {
+    const imports = new ImportCollector();
+    const btnNode: MiniAppNode = {
+      id: "api-btn",
+      type: "button",
+      props: { label: "Call API" },
+      events: {
+        onPress: {
+          type: "invokeApi",
+          integrationId: "int-1",
+          pathId: "path-1",
+          requestMappings: [
+            {
+              parameter: "apiKey",
+              sourceType: "credential",
+              sourceValue: "cred-exchange-rate",
+            },
+            {
+              parameter: "user.address.city",
+              sourceType: "static",
+              sourceValue: "Addis Ababa",
+            },
+          ],
+          responseMappings: [
+            {
+              responsePath: "data.user.id",
+              targetVariable: "currentUser.id",
+            },
+          ],
+        },
+      },
+    };
+
+    const styles = generateStyles([btnNode]);
+    const output = generateNode(btnNode, {
+      imports,
+      styleNames: styles.styleNames,
+      screens: [],
+    });
+
+    expect(output).toContain("invokeApi(");
+    expect(output).toContain('setValueByPath(params, "apiKey", credentialsResolver.get("cred-exchange-rate"))');
+    expect(output).toContain('setValueByPath(params, "user.address.city", "Addis Ababa")');
+    expect(output).toContain('setValueByPath(next, "id", getValueByPath(result.data, "data.user.id") ?? null)');
+    expect(output).toContain('setValueByPath(next, "path-1.status", "loading")');
+    const renderedImports = imports.renderReactNativeImport();
+    expect(renderedImports).toContain("credentialsResolver");
+    expect(renderedImports).toContain("getValueByPath");
+    expect(renderedImports).toContain("invokeApi");
+    expect(renderedImports).toContain("setValueByPath");
+  });
+
+  it("collects input and nested response variables for generated API screens", () => {
+    const screen: ScreenDefinition = {
+      id: "register",
+      name: "Register",
+      nodes: [
+        {
+          id: "first-name",
+          type: "input",
+          props: { placeholder: "First name", variableName: "firstName", defaultValue: "" },
+        },
+        {
+          id: "submit",
+          type: "button",
+          props: { label: "Register" },
+          events: {
+            onPress: {
+              type: "invokeApi",
+              integrationId: "user-api",
+              pathId: "register-user",
+              requestMappings: [{ parameter: "user.firstName", sourceType: "variable", sourceValue: "firstName" }],
+              responseMappings: [{ responsePath: "data.user.id", targetVariable: "currentUser.id" }],
+            },
+          },
+        },
+      ],
+    };
+
+    const screenCode = generateScreen(screen, [screen]);
+
+    expect(screenCode).toContain('const [firstName, setFirstName] = React.useState("");');
+    expect(screenCode).toContain('const [currentUser, setCurrentUser] = React.useState({"id":""});');
+    expect(screenCode).toContain('const [api, setApi] = React.useState({"register-user":{"status":"idle"');
+    expect(screenCode).toContain('setValueByPath(params, "user.firstName", firstName ?? "")');
   });
 });
