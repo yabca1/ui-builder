@@ -40,6 +40,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     // Validate and normalize
     const validationResult = validateProjectObject(projectData);
     if (!validationResult.isValid) {
+      console.warn("Validation failed for project:", id, JSON.stringify(validationResult.errors, null, 2));
       return NextResponse.json(
         { error: "Validation failed", errors: validationResult.errors },
         { status: 400 }

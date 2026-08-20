@@ -105,6 +105,9 @@ export function AutosaveManager() {
 
         if (!res.ok) {
           const errData = await res.json();
+          if (errData.errors) {
+            console.error("Autosave validation errors:", errData.errors);
+          }
           throw new Error(errData.error || "Save failed");
         }
 
